@@ -1,0 +1,6 @@
+CREATE TABLE Usuario (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    nombre NVARCHAR(100) NOT NULL,
+    apellido NVARCHAR(100) NOT NULL,
+    fechaRegistro DATETIME NOT NULL DEFAULT GETDATE()    
+);
