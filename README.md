@@ -1,4 +1,4 @@
-DDl de el palicativo
+
 USE [master]
 GO
 /****** Objeto: Database [SeparacionCuentas] Fecha de script: 3/10/2026 11:06:38 ******/
