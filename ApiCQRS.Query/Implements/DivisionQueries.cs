@@ -56,5 +56,49 @@ namespace ApiCQRS.Query.Implements
                 new { IdDivision = id }
             );
         }
+
+        public async Task<IEnumerable<Division>> GetPorCuenta(int idCuenta)
+        {
+            const string sql = @"
+                SELECT
+                    id_division AS IdDivision,
+                    id_cuenta AS IdCuenta,
+                    id_usuario AS IdUsuario,
+                    monto AS Monto,
+                    estado AS Estado,
+                    tipo_pago AS TipoPago,
+                    referencia_pago AS ReferenciaPago,
+                    fecha_pago AS FechaPago
+                FROM dbo.Division
+                WHERE id_cuenta = @IdCuenta;
+            ";
+
+            return await _db.QueryAsync<Division>(
+                sql,
+                new { IdCuenta = idCuenta }
+            );
+        }
+
+        public async Task<IEnumerable<Division>> GetPorUsuario(int idUsuario)
+        {
+            const string sql = @"
+                SELECT
+                    id_division AS IdDivision,
+                    id_cuenta AS IdCuenta,
+                    id_usuario AS IdUsuario,
+                    monto AS Monto,
+                    estado AS Estado,
+                    tipo_pago AS TipoPago,
+                    referencia_pago AS ReferenciaPago,
+                    fecha_pago AS FechaPago
+                FROM dbo.Division
+                WHERE id_usuario = @IdUsuario;
+            ";
+
+            return await _db.QueryAsync<Division>(
+                sql,
+                new { IdUsuario = idUsuario }
+            );
+        }
     }
 }

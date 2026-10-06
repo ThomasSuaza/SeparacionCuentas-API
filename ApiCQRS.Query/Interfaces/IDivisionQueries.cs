@@ -8,5 +8,7 @@ namespace ApiCQRS.Query.Interfaces
     {
         Task<IEnumerable<Division>> GetAll();
         Task<Division?> Get(int id);
+        Task<IEnumerable<Division>> GetPorCuenta(int idCuenta);
+        Task<IEnumerable<Division>> GetPorUsuario(int idUsuario);
     }
 }

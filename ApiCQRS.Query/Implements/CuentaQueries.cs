@@ -50,5 +50,25 @@ namespace ApiCQRS.Query.Implements
                 new { IdCuenta = id }
             );
         }
+
+        public async Task<IEnumerable<Cuenta>> GetPorUsuarioPagador(int idUsuario)
+        {
+            const string sql = @"
+                SELECT
+                    id_cuenta AS IdCuenta,
+                    id_usuario_pagador AS IdUsuarioPagador,
+                    descripcion AS Descripcion,
+                    monto_total AS MontoTotal,
+                    fecha AS Fecha
+                FROM dbo.Cuenta
+                WHERE id_usuario_pagador = @IdUsuario
+                ORDER BY fecha DESC;
+            ";
+
+            return await _db.QueryAsync<Cuenta>(
+                sql,
+                new { IdUsuario = idUsuario }
+            );
+        }
     }
 }

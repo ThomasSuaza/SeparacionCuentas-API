@@ -8,5 +8,6 @@ namespace ApiCQRS.Query.Interfaces
     {
         Task<IEnumerable<Cuenta>> GetAll();
         Task<Cuenta?> Get(int id);
+        Task<IEnumerable<Cuenta>> GetPorUsuarioPagador(int idUsuario);
     }
 }
