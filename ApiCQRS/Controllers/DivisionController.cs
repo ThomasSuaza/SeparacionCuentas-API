@@ -23,8 +23,9 @@ namespace ApiCQRS.Controllers
             _logger = logger;
         }
 
+
         /// <summary>
-        /// Obtiene todas las divisiones.
+        /// Obtiene todas las divisiones registradas.
         /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Division>>> GetAll()
@@ -37,13 +38,17 @@ namespace ApiCQRS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo las divisiones");
+                _logger.LogError(
+                    ex,
+                    "Error obteniendo las divisiones"
+                );
 
                 return StatusCode(
                     StatusCodes.Status500InternalServerError
                 );
             }
         }
+
 
         /// <summary>
         /// Obtiene una división por su ID.
@@ -57,7 +62,9 @@ namespace ApiCQRS.Controllers
 
                 if (division == null)
                 {
-                    return NotFound();
+                    return NotFound(
+                        $"No se encontró la división con ID {id}."
+                    );
                 }
 
                 return Ok(division);
@@ -75,6 +82,63 @@ namespace ApiCQRS.Controllers
                 );
             }
         }
+
+
+        /// <summary>
+        /// Obtiene todas las divisiones asociadas a una cuenta.
+        /// </summary>
+        [HttpGet("cuenta/{idCuenta}")]
+        public async Task<ActionResult<IEnumerable<Division>>> GetPorCuenta(
+            int idCuenta)
+        {
+            try
+            {
+                var divisiones = await _query.GetPorCuenta(idCuenta);
+
+                return Ok(divisiones);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error obteniendo las divisiones de la cuenta {IdCuenta}",
+                    idCuenta
+                );
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
+
+        /// <summary>
+        /// Obtiene todas las divisiones asociadas a un usuario.
+        /// </summary>
+        [HttpGet("usuario/{idUsuario}")]
+        public async Task<ActionResult<IEnumerable<Division>>> GetPorUsuario(
+            int idUsuario)
+        {
+            try
+            {
+                var divisiones = await _query.GetPorUsuario(idUsuario);
+
+                return Ok(divisiones);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error obteniendo las divisiones del usuario {IdUsuario}",
+                    idUsuario
+                );
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError
+                );
+            }
+        }
+
 
         /// <summary>
         /// Crea una nueva división.
@@ -94,13 +158,17 @@ namespace ApiCQRS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creando una división");
+                _logger.LogError(
+                    ex,
+                    "Error creando una división"
+                );
 
                 return StatusCode(
                     StatusCodes.Status500InternalServerError
                 );
             }
         }
+
 
         /// <summary>
         /// Actualiza una división existente.
@@ -123,7 +191,9 @@ namespace ApiCQRS.Controllers
 
                 if (existente == null)
                 {
-                    return NotFound();
+                    return NotFound(
+                        $"No se encontró la división con ID {id}."
+                    );
                 }
 
                 var resultado = await _repo.Update(division);
@@ -144,8 +214,9 @@ namespace ApiCQRS.Controllers
             }
         }
 
+
         /// <summary>
-        /// Elimina una división por su ID.
+        /// Elimina una división existente.
         /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -156,7 +227,9 @@ namespace ApiCQRS.Controllers
 
                 if (existente == null)
                 {
-                    return NotFound();
+                    return NotFound(
+                        $"No se encontró la división con ID {id}."
+                    );
                 }
 
                 await _repo.Delete(id);

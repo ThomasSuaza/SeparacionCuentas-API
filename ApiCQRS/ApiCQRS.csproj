@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <DocumentationFile>bin\${Configuration}\${TargetFramework}\api.xml</DocumentationFile>
+	  <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\api.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
