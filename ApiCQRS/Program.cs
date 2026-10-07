@@ -1,7 +1,10 @@
+using ApiCQRS.Middleware;
 using ApiCQRS.Query.Implements;
 using ApiCQRS.Query.Interfaces;
 using ApiCQRS.Repository.Implements;
 using ApiCQRS.Repository.Interfaces;
+using ApiCQRS.Services.Implements;
+using ApiCQRS.Services.Interfaces;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
@@ -66,6 +69,12 @@ namespace ApiCQRS
                 DivisionQueries
             >();
 
+            // Balance
+            builder.Services.AddTransient<
+                IBalanceQueries,
+                BalanceQueries
+            >();
+
 
             // =====================================================
             // REPOSITORIES
@@ -90,6 +99,25 @@ namespace ApiCQRS
 
 
             // =====================================================
+            // SERVICES (logica de negocio)
+            // =====================================================
+            builder.Services.AddTransient<
+                ICuentaService,
+                CuentaService
+            >();
+
+            builder.Services.AddTransient<
+                IDivisionService,
+                DivisionService
+            >();
+
+            builder.Services.AddTransient<
+                IBalanceService,
+                BalanceService
+            >();
+
+
+            // =====================================================
             // CONEXION A SQL SERVER
             // =====================================================
             builder.Services.AddScoped<IDbConnection>(sp =>
@@ -106,6 +134,12 @@ namespace ApiCQRS
             // CONSTRUIR APLICACION
             // =====================================================
             var app = builder.Build();
+
+
+            // =====================================================
+            // MANEJO DE ERRORES DE NEGOCIO (400 / 404)
+            // =====================================================
+            app.UseMiddleware<ManejoErroresMiddleware>();
 
 
             // =====================================================
