@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ApiCQRS.Query\ApiCQRS.Query.csproj" />
     <ProjectReference Include="..\ApiCQRS.Repository\ApiCQRS.Repository.csproj" />
+    <ProjectReference Include="..\ApiCQRS.Services\ApiCQRS.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,5 +2,6 @@
   <Project Path="ApiCQRS.Models/ApiCQRS.Models.csproj" />
   <Project Path="ApiCQRS.Query/ApiCQRS.Query.csproj" />
   <Project Path="ApiCQRS.Repository/ApiCQRS.Repository.csproj" />
+  <Project Path="ApiCQRS.Services/ApiCQRS.Services.csproj" />
   <Project Path="ApiCQRS/ApiCQRS.csproj" />
 </Solution>
