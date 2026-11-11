@@ -1,0 +1,171 @@
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { SeparacionCuentasService } from '../../core/services/separacion-cuentas.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
+
+@Component({
+  selector: 'app-landing',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div style="display: grid; gap: 28px; padding-top: 10px;">
+      <!-- Hero Principal -->
+      <section class="panel" style="padding: 34px; position: relative; overflow: hidden;">
+        <div style="max-width: 780px; position: relative; z-index: 1;">
+          <div class="eyebrow">SPLITBILL AI · SLIT.IA · PLATAFORMA WEB OFICIAL</div>
+          <h1 class="page-title" style="font-size: clamp(28px, 3.4vw, 42px); margin-bottom: 12px;">
+            Divide cuentas grupales sin discusiones ni cálculos manuales.
+          </h1>
+          <p class="intro" style="font-size: 14.5px; max-width: 640px; margin-bottom: 24px;">
+            Conectado directamente a <b>SeparacionCuentas-API (.NET 10 + Dapper + SQL Server)</b>.
+            Gestiona cuentas compartidas, calcula saldos exactos (<code>RECIBE</code>, <code>PAGA</code>, <code>SALDADO</code>)
+            y audita estados de distribución (<code>COMPLETA</code>, <code>PENDIENTE</code>, <code>EXCEDIDA</code>) desde el
+            <b>Apartado de Usuario</b> o la <b>Consola de Administrador</b>.
+          </p>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <button class="btn-primary" type="button" (click)="enterPortal('user')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              Entrar al Apartado de Usuario
+            </button>
+            <button class="btn-outline" type="button" (click)="enterPortal('admin')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              </svg>
+              Abrir Consola de Administrador
+            </button>
+            <button class="btn-outline" type="button" (click)="theme.toggleTheme()">
+              Cambiar a {{ theme.isDark() ? 'Modo Claro (Blanco + Índigo)' : 'Modo Oscuro (Azul Noche + Dorado)' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Acceso Rápido por Usuario & Registro -->
+      <div class="content-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Selecciona tu perfil activo</h2>
+              <p class="sub">Haz clic en cualquier integrante registrado en <code>dbo.Usuario</code> para explorar su vista personalizada.</p>
+            </div>
+            <span class="pill">{{ api.usuarios().length }} usuarios</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px;">
+            @for (u of api.usuarios(); track u.idUsuario) {
+              <div
+                style="border: 1px solid var(--border); background: var(--surface-alt); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: all 0.15s ease;"
+                [style.border-color]="auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
+                (click)="loginAsUser(u.idUsuario)"
+              >
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
+                  <div style="min-width: 0;">
+                    <strong style="display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ u.nombre }}</strong>
+                    <small style="color: var(--muted); font-size: 11px;">{{ u.correo }}</small>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid var(--border); font-size: 11px;">
+                  <span style="color: var(--muted);">ID #{{ u.idUsuario }} · {{ u.telefono || 'Sin teléfono' }}</span>
+                  @if (auth.currentUser().idUsuario === u.idUsuario) {
+                    <span class="badge-status badge-success">Activo</span>
+                  } @else {
+                    <span style="color: var(--accent); font-weight: 700;">Ingresar →</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Registro Rápido de Nuevo Usuario (POST /api/Usuario) -->
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Crear nueva cuenta de usuario</h2>
+              <p class="sub">Registra un participante directamente en <code>POST /api/Usuario</code>.</p>
+            </div>
+            <span class="pill">RF01</span>
+          </div>
+
+          <form (ngSubmit)="registrarUsuario()" style="display: grid; gap: 13px;">
+            <div class="form-group">
+              <label>Nombre completo</label>
+              <input class="form-control" type="text" [(ngModel)]="nuevoNombre" name="nombre" placeholder="Ej. Laura Camila Ríos" required />
+            </div>
+            <div class="form-group">
+              <label>Correo electrónico (Único en SQL Server)</label>
+              <input class="form-control" type="email" [(ngModel)]="nuevoCorreo" name="correo" placeholder="laura.rios@splitbill.ai" required />
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Teléfono / Celular (Nequi)</label>
+                <input class="form-control" type="text" [(ngModel)]="nuevoTelefono" name="telefono" placeholder="+57 310 000 0000" />
+              </div>
+              <div class="form-group">
+                <label>Contraseña</label>
+                <input class="form-control" type="password" [(ngModel)]="nuevoPassword" name="password" placeholder="••••••••" required />
+              </div>
+            </div>
+            <button class="btn-primary" type="submit" style="margin-top: 6px; width: 100%;">
+              Registrar e Ingresar al Portal
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+  `
+})
+export class LandingComponent {
+  readonly api = inject(SeparacionCuentasService);
+  readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
+  private readonly router = inject(Router);
+
+  nuevoNombre = '';
+  nuevoCorreo = '';
+  nuevoTelefono = '';
+  nuevoPassword = '';
+
+  enterPortal(role: 'user' | 'admin'): void {
+    this.auth.setRole(role);
+    if (role === 'admin') {
+      this.router.navigate(['/admin/resumen']);
+    } else {
+      this.router.navigate(['/usuario/panel']);
+    }
+  }
+
+  loginAsUser(idUsuario: number): void {
+    this.auth.selectUser(idUsuario);
+    this.auth.setRole('user', true);
+    this.router.navigate(['/usuario/panel']);
+  }
+
+  registrarUsuario(): void {
+    if (!this.nuevoNombre.trim() || !this.nuevoCorreo.trim()) return;
+    this.api
+      .createUsuario({
+        nombre: this.nuevoNombre.trim(),
+        correo: this.nuevoCorreo.trim(),
+        telefono: this.nuevoTelefono.trim() || null,
+        passwordHash: this.nuevoPassword ? `HASH_${btoa(this.nuevoPassword)}` : 'HASH_DEFAULT_2026'
+      })
+      .subscribe(created => {
+        this.nuevoNombre = '';
+        this.nuevoCorreo = '';
+        this.nuevoTelefono = '';
+        this.nuevoPassword = '';
+        this.auth.selectUser(created.idUsuario);
+        this.auth.setRole('user', true);
+        this.router.navigate(['/usuario/panel']);
+      });
+  }
+}

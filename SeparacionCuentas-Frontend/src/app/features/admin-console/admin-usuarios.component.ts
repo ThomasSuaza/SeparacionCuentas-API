@@ -1,0 +1,246 @@
+import { Component, inject, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { SeparacionCuentasService } from '../../core/services/separacion-cuentas.service';
+import { AuthService } from '../../core/services/auth.service';
+import { UsuarioResponse } from '../../core/models/api.models';
+
+@Component({
+  selector: 'app-admin-usuarios',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="heading-row">
+      <div>
+        <div class="eyebrow">CONSOLA DE ADMINISTRADOR · MÓDULO USUARIOS (/api/Usuario)</div>
+        <h1 class="page-title">Gestión CRUD de Usuarios</h1>
+        <p class="intro">
+          Administra los registros de la tabla <code>dbo.Usuario</code>: crear (<code>POST</code>), consultar (<code>GET</code>),
+          editar (<code>PUT</code>), eliminar (<code>DELETE</code>) y filtrar participantes por cuenta.
+        </p>
+      </div>
+      <button class="btn-primary" type="button" (click)="abrirNuevoUsuario()">
+        + Nuevo Usuario (POST /api/Usuario)
+      </button>
+    </div>
+
+    <!-- Barra de búsqueda y filtro por cuenta (RF05: GET /api/Usuario/cuenta/{idCuenta}/participantes) -->
+    <div class="panel" style="margin-bottom: 20px; padding: 16px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <input
+          class="form-control"
+          style="flex: 1; min-width: 240px;"
+          type="text"
+          [(ngModel)]="busqueda"
+          placeholder="Buscar por nombre, correo o teléfono..."
+        />
+
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 11.5px; font-weight: 750; color: var(--muted);">
+            Filtrar participantes de cuenta (RF05):
+          </span>
+          <select class="form-control" style="width: auto;" [(ngModel)]="filtroIdCuenta">
+            <option [ngValue]="0">Todos los usuarios ({{ api.usuarios().length }})</option>
+            @for (c of api.cuentas(); track c.idCuenta) {
+              <option [ngValue]="c.idCuenta">Cuenta #00{{ c.idCuenta }} · {{ c.descripcion }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla CRUD de Usuarios -->
+    <section class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID (PK)</th>
+              <th>Nombre</th>
+              <th>Correo Electrónico (UNIQUE)</th>
+              <th>Teléfono</th>
+              <th>Cuentas Pagadas</th>
+              <th>Divisiones</th>
+              <th>Acciones Administrativas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of usuariosFiltrados(); track u.idUsuario) {
+              <tr>
+                <td><b>#{{ u.idUsuario }}</b></td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
+                    <strong>{{ u.nombre }}</strong>
+                  </div>
+                </td>
+                <td><code>{{ u.correo }}</code></td>
+                <td>{{ u.telefono || 'No registrado' }}</td>
+                <td>
+                  <span class="badge-status badge-info">
+                    {{ contarCuentasPagadas(u.idUsuario) }} cuentas
+                  </span>
+                </td>
+                <td>
+                  <span class="pill">{{ contarDivisiones(u.idUsuario) }} divisiones</span>
+                </td>
+                <td>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn-outline btn-sm" type="button" (click)="auth.selectUser(u.idUsuario)">
+                      Simular Sesión
+                    </button>
+                    <button class="btn-outline btn-sm" type="button" (click)="abrirEditarUsuario(u)">
+                      Editar
+                    </button>
+                    <button class="btn-danger btn-sm" type="button" (click)="eliminarUsuario(u.idUsuario)">
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Modal Crear / Editar Usuario -->
+    @if (mostrarModal()) {
+      <div class="modal-backdrop" (click)="mostrarModal.set(false)">
+        <div class="modal-card" style="max-width: 500px;" (click)="$event.stopPropagation()">
+          <div class="panel-head">
+            <div>
+              <h2>{{ editandoId() ? 'Editar Usuario #' + editandoId() : 'Crear Nuevo Usuario' }}</h2>
+              <p class="sub">
+                Endpoint: <code>{{ editandoId() ? 'PUT /api/Usuario/' + editandoId() : 'POST /api/Usuario' }}</code>
+              </p>
+            </div>
+            <span class="pill">dbo.Usuario</span>
+          </div>
+
+          <form (ngSubmit)="guardarUsuario()" style="display: grid; gap: 14px;">
+            <div class="form-group">
+              <label>Nombre completo (<code>nombre</code>)</label>
+              <input class="form-control" type="text" [(ngModel)]="formNombre" name="nombre" required />
+            </div>
+
+            <div class="form-group">
+              <label>Correo electrónico (<code>correo</code>)</label>
+              <input class="form-control" type="email" [(ngModel)]="formCorreo" name="correo" required />
+            </div>
+
+            <div class="form-group">
+              <label>Teléfono (<code>telefono</code>)</label>
+              <input class="form-control" type="text" [(ngModel)]="formTelefono" name="telefono" placeholder="+57 300 000 0000" />
+            </div>
+
+            <div class="form-group">
+              <label>Hash / Contraseña (<code>password_hash</code>)</label>
+              <input class="form-control" type="text" [(ngModel)]="formPasswordHash" name="passwordHash" required />
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+              <button class="btn-outline" type="button" (click)="mostrarModal.set(false)">Cancelar</button>
+              <button class="btn-primary" type="submit">
+                {{ editandoId() ? 'Actualizar Usuario' : 'Crear Usuario' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  `
+})
+export class AdminUsuariosComponent {
+  readonly api = inject(SeparacionCuentasService);
+  readonly auth = inject(AuthService);
+
+  busqueda = '';
+  filtroIdCuenta = 0;
+
+  readonly mostrarModal = signal<boolean>(false);
+  readonly editandoId = signal<number | null>(null);
+
+  formNombre = '';
+  formCorreo = '';
+  formTelefono = '';
+  formPasswordHash = 'HASH_BCRYPT_2026';
+
+  readonly usuariosFiltrados = computed(() => {
+    let lista = this.api.usuarios();
+    const idCuenta = Number(this.filtroIdCuenta);
+    if (idCuenta > 0) {
+      const idsParticipantes = new Set(
+        this.api
+          .divisiones()
+          .filter(d => d.idCuenta === idCuenta)
+          .map(d => d.idUsuario)
+      );
+      lista = lista.filter(u => idsParticipantes.has(u.idUsuario));
+    }
+
+    const q = this.busqueda.trim().toLowerCase();
+    if (!q) return lista;
+    return lista.filter(
+      u =>
+        u.nombre.toLowerCase().includes(q) ||
+        u.correo.toLowerCase().includes(q) ||
+        (u.telefono || '').toLowerCase().includes(q)
+    );
+  });
+
+  contarCuentasPagadas(idUsuario: number): number {
+    return this.api.cuentas().filter(c => c.idUsuarioPagador === idUsuario).length;
+  }
+
+  contarDivisiones(idUsuario: number): number {
+    return this.api.divisiones().filter(d => d.idUsuario === idUsuario).length;
+  }
+
+  abrirNuevoUsuario(): void {
+    this.editandoId.set(null);
+    this.formNombre = '';
+    this.formCorreo = '';
+    this.formTelefono = '+57 310 ';
+    this.formPasswordHash = 'HASH_SHA256_SPLITBILL';
+    this.mostrarModal.set(true);
+  }
+
+  abrirEditarUsuario(u: UsuarioResponse): void {
+    this.editandoId.set(u.idUsuario);
+    this.formNombre = u.nombre;
+    this.formCorreo = u.correo;
+    this.formTelefono = u.telefono || '';
+    this.formPasswordHash = 'HASH_SHA256_SPLITBILL';
+    this.mostrarModal.set(true);
+  }
+
+  guardarUsuario(): void {
+    if (!this.formNombre.trim() || !this.formCorreo.trim()) return;
+    const id = this.editandoId();
+    if (id) {
+      this.api
+        .updateUsuario(id, {
+          idUsuario: id,
+          nombre: this.formNombre.trim(),
+          correo: this.formCorreo.trim(),
+          telefono: this.formTelefono.trim() || null,
+          passwordHash: this.formPasswordHash.trim() || 'HASH_DEFAULT'
+        })
+        .subscribe(() => this.mostrarModal.set(false));
+    } else {
+      this.api
+        .createUsuario({
+          nombre: this.formNombre.trim(),
+          correo: this.formCorreo.trim(),
+          telefono: this.formTelefono.trim() || null,
+          passwordHash: this.formPasswordHash.trim() || 'HASH_DEFAULT'
+        })
+        .subscribe(() => this.mostrarModal.set(false));
+    }
+  }
+
+  eliminarUsuario(id: number): void {
+    this.api.deleteUsuario(id).subscribe();
+  }
+}
