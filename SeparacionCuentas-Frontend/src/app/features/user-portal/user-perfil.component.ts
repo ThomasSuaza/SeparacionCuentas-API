@@ -56,9 +56,24 @@ import { AuthService } from '../../core/services/auth.service';
 
           <div style="border-top: 1px solid var(--border); padding-top: 16px;">
             <div style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 10px;">
-              Cuentas disponibles para ingreso rápido:
+              Perfiles disponibles para ingreso rápido:
             </div>
             <div style="display: grid; gap: 8px;">
+              <!-- Opción Perfil Administrador -->
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; padding: 11px 12px; border-radius: 11px; border: 1.5px solid var(--accent); background: var(--surface-alt); cursor: pointer;"
+                (click)="auth.loginAsAdmin()"
+              >
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div class="person-bubble" style="background: var(--accent-soft); color: var(--accent);">🛡️</div>
+                  <div>
+                    <strong style="font-size: 13px; display: block;">Administrador spliy.IA</strong>
+                    <small style="font-size: 11px; color: var(--muted);">admin&#64;spliy.ia · Perfil Administrativo</small>
+                  </div>
+                </div>
+                <span style="font-size: 12px; font-weight: 800; color: var(--accent);">Entrar Admin →</span>
+              </div>
+
               @for (u of api.usuarios(); track u.idUsuario) {
                 <div
                   style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
@@ -84,8 +99,143 @@ import { AuthService } from '../../core/services/auth.service';
           </div>
         </section>
       </div>
+    } @else if (auth.isAdminSession()) {
+      <!-- VISTA EXCLUSIVA DEL PERFIL DE ADMINISTRADOR -->
+      <section class="panel" style="margin-bottom: 22px; padding: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div
+              class="avatar-circle"
+              style="width: 68px; height: 68px; font-size: 24px; border-radius: 20px; box-shadow: var(--shadow);"
+            >
+              🛡️
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <h1 style="font-size: 23px; font-weight: 800; letter-spacing: -0.02em; margin: 0;">
+                  Administrador spliy.IA
+                </h1>
+                <span class="badge-status badge-info">🛡️ Perfil Administrador</span>
+                <span class="badge-status badge-success">✓ Acceso Total</span>
+              </div>
+              <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--muted);">
+                <span>📧 admin&#64;spliy.ia</span>
+                <span>🔐 Rol: Superadministrador Financiero y de Sistema</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a routerLink="/admin/resumen" class="btn-primary">
+              📊 Panel de Control Admin
+            </a>
+            <button class="btn-outline" type="button" (click)="auth.openAuthModal('switch')">
+              🔄 Cambiar perfil
+            </button>
+            <button class="btn-danger" type="button" (click)="auth.logout()">
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPIs Globales del Perfil Admin -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="tiny">Usuarios Gestionados</div>
+          <strong>{{ api.usuarios().length }}</strong>
+          <small>Perfiles registrados en SQL Server</small>
+        </div>
+        <div class="stat-card">
+          <div class="tiny">Cuentas Administradas</div>
+          <strong>{{ api.cuentas().length }}</strong>
+          <small>Volumen: &#36;{{ api.volumenTotalCuentas() | number:'1.0-0' }} COP</small>
+        </div>
+        <div class="stat-card">
+          <div class="tiny">Total Recaudado</div>
+          <strong style="color: var(--success);">&#36;{{ api.totalPagadoDivisiones() | number:'1.0-0' }}</strong>
+          <small>COP en pagos confirmados</small>
+        </div>
+        <div class="stat-card">
+          <div class="tiny">Cartera por Cobrar</div>
+          <strong style="color: var(--warning);">&#36;{{ api.totalPendienteDivisiones() | number:'1.0-0' }}</strong>
+          <small>COP pendientes de liquidar</small>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Permisos y módulos del Perfil Admin</h2>
+              <p class="sub">Accesos directos a la consola administrativa de spliy.IA.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: 10px;">
+            <a routerLink="/admin/resumen" style="padding: 13px 15px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>📊 Panel de Control Ejecutivo</strong>
+                <div style="font-size: 11.5px; color: var(--muted);">Actividad reciente, cuentas y métricas financieras</div>
+              </div>
+              <span style="color: var(--accent); font-weight: 800; font-size: 12px;">Abrir →</span>
+            </a>
+
+            <a routerLink="/admin/usuarios" style="padding: 13px 15px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>👥 Directorio de Usuarios ({{ api.usuarios().length }})</strong>
+                <div style="font-size: 11.5px; color: var(--muted);">Crear, editar y eliminar cuentas de usuario</div>
+              </div>
+              <span style="color: var(--accent); font-weight: 800; font-size: 12px;">Abrir →</span>
+            </a>
+
+            <a routerLink="/admin/cuentas" style="padding: 13px 15px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>🧾 Cuentas y Facturación ({{ api.cuentas().length }})</strong>
+                <div style="font-size: 11.5px; color: var(--muted);">Auditoría de saldos, devoluciones y progreso de cobro</div>
+              </div>
+              <span style="color: var(--accent); font-weight: 800; font-size: 12px;">Abrir →</span>
+            </a>
+
+            <a routerLink="/admin/divisiones" style="padding: 13px 15px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>💳 Centro de Transacciones ({{ api.divisiones().length }})</strong>
+                <div style="font-size: 11.5px; color: var(--muted);">Confirmar pagos, comprobantes y cuotas pendientes</div>
+              </div>
+              <span style="color: var(--accent); font-weight: 800; font-size: 12px;">Abrir →</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Cambiar a un Perfil de Usuario</h2>
+              <p class="sub">Selecciona cualquier usuario para ver la plataforma desde su perfil personal.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: 8px;">
+            @for (u of api.usuarios(); track u.idUsuario) {
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
+                (click)="auth.selectUser(u.idUsuario)"
+              >
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
+                  <div>
+                    <strong style="font-size: 13px; display: block;">{{ u.nombre }}</strong>
+                    <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
+                  </div>
+                </div>
+                <span style="font-size: 12px; font-weight: 700; color: var(--accent);">Cambiar a este perfil →</span>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
     } @else {
-      <!-- CABECERA DE PERFIL REAL -->
+      <!-- CABECERA DE PERFIL REAL DE USUARIO -->
       <section class="panel" style="margin-bottom: 22px; padding: 24px;">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -116,8 +266,8 @@ import { AuthService } from '../../core/services/auth.service';
             <a routerLink="/usuario/cuentas" class="btn-primary">
               + Añadir cuenta
             </a>
-            <button class="btn-outline" type="button" (click)="auth.openAuthModal('login')">
-              🔄 Cambiar cuenta
+            <button class="btn-outline" type="button" (click)="auth.openAuthModal('switch')">
+              🔄 Cambiar perfil
             </button>
             <button class="btn-danger" type="button" (click)="auth.logout()">
               Cerrar sesión

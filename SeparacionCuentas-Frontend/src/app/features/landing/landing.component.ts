@@ -24,15 +24,24 @@ import { ThemeService } from '../../core/services/theme.service';
           </p>
 
           <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <button class="btn-primary" type="button" (click)="auth.openAuthModal('login')">
-              Iniciar sesión
-            </button>
-            <button class="btn-outline" type="button" (click)="auth.openAuthModal('register')">
-              + Registrarse
-            </button>
-            <button class="btn-outline" type="button" (click)="irACrearCuenta()">
-              + Añadir cuenta compartida
-            </button>
+            @if (!auth.isLoggedIn()) {
+              <button class="btn-primary" type="button" (click)="auth.openAuthModal('login')">
+                Iniciar sesión
+              </button>
+              <button class="btn-outline" type="button" (click)="auth.openAuthModal('register')">
+                + Registrarse
+              </button>
+            } @else {
+              <button class="btn-primary" type="button" (click)="irACrearCuenta()">
+                + Añadir cuenta compartida
+              </button>
+              <button class="btn-outline" type="button" (click)="auth.openAuthModal('switch')">
+                🔄 Cambiar perfil
+              </button>
+              <button class="btn-danger" type="button" (click)="auth.logout()">
+                Cerrar sesión
+              </button>
+            }
           </div>
         </div>
       </section>

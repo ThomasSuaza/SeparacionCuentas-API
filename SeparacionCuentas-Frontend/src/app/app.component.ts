@@ -112,6 +112,20 @@ import { ToastService } from './core/services/toast.service';
                     Auditoría
                   </span>
                 </a>
+
+                <a
+                  routerLink="/usuario/perfil"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="closeMobileMenu()"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+                    </svg>
+                    Mi perfil Admin
+                  </span>
+                </a>
               </div>
 
               <div class="separator"></div>
@@ -119,9 +133,9 @@ import { ToastService } from './core/services/toast.service';
                 type="button"
                 class="btn-outline btn-sm"
                 style="width: 100%;"
-                (click)="switchWorkspaceRole('user')"
+                (click)="abrirModalAuth('switch')"
               >
-                ← Volver a vista de usuario
+                🔄 Cambiar de perfil
               </button>
             </div>
           } @else {
@@ -245,35 +259,53 @@ import { ToastService } from './core/services/toast.service';
                 }
               </button>
 
-              <!-- Botones de Login, Register y Mi Perfil -->
-              <button
-                type="button"
-                class="btn-outline btn-sm"
-                (click)="abrirModalAuth('login')"
-              >
-                Iniciar sesión
-              </button>
+              @if (!auth.isLoggedIn()) {
+                <!-- Cuando NO ha iniciado sesión: Mostrar Iniciar sesión y Registrarse -->
+                <button
+                  type="button"
+                  class="btn-outline btn-sm"
+                  (click)="abrirModalAuth('login')"
+                >
+                  Iniciar sesión
+                </button>
 
-              <button
-                type="button"
-                class="btn-primary btn-sm"
-                (click)="abrirModalAuth('register')"
-              >
-                + Registrarse
-              </button>
+                <button
+                  type="button"
+                  class="btn-primary btn-sm"
+                  (click)="abrirModalAuth('register')"
+                >
+                  + Registrarse
+                </button>
+              } @else {
+                <!-- Cuando YA inició sesión: Mostrar Cambiar perfil, Cerrar sesión y Badge de Perfil -->
+                <button
+                  type="button"
+                  class="btn-outline btn-sm"
+                  (click)="abrirModalAuth('switch')"
+                >
+                  🔄 Cambiar perfil
+                </button>
 
-              <!-- Acceso directo a Mi Perfil Real -->
-              @if (auth.isLoggedIn()) {
+                <button
+                  type="button"
+                  class="btn-danger btn-sm"
+                  (click)="cerrarSesion()"
+                >
+                  Cerrar sesión
+                </button>
+
                 <a
                   routerLink="/usuario/perfil"
                   class="profile-Menu"
                   style="cursor: pointer;"
-                  title="Ver mi perfil de usuario"
+                  title="Ver mi perfil activo"
                 >
                   <div class="avatar-circle">{{ auth.iniciales() }}</div>
                   <div style="line-height: 1.2;">
                     <strong style="font-size: 12px; display: block;">{{ auth.currentUser().nombre }}</strong>
-                    <small style="font-size: 10px; color: var(--accent); font-weight: 700;">Ver mi perfil →</small>
+                    <small style="font-size: 10px; color: var(--accent); font-weight: 700;">
+                      {{ auth.isAdminSession() ? '🛡️ Perfil Admin →' : 'Ver mi perfil →' }}
+                    </small>
                   </div>
                 </a>
               }
@@ -293,20 +325,20 @@ import { ToastService } from './core/services/toast.service';
         </main>
       </div>
 
-      <!-- MODAL GLOBAL DE LOGIN Y REGISTER -->
+      <!-- MODAL GLOBAL DE LOGIN / CAMBIO DE PERFIL / REGISTER -->
       @if (auth.authModalMode(); as mode) {
         <div class="modal-backdrop" (click)="auth.closeAuthModal()">
-          <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
-            <!-- Pestañas Login / Register -->
+          <div class="modal-card" style="max-width: 500px;" (click)="$event.stopPropagation()">
+            <!-- Pestañas Selección de Perfil / Nuevo Usuario -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--surface-alt); padding: 5px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 18px;">
               <button
                 type="button"
                 style="border: 0; padding: 9px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 800; transition: all 0.15s ease;"
-                [style.background]="mode === 'login' ? 'var(--accent)' : 'transparent'"
-                [style.color]="mode === 'login' ? 'var(--on-accent)' : 'var(--muted)'"
-                (click)="auth.openAuthModal('login')"
+                [style.background]="mode !== 'register' ? 'var(--accent)' : 'transparent'"
+                [style.color]="mode !== 'register' ? 'var(--on-accent)' : 'var(--muted)'"
+                (click)="auth.openAuthModal('switch')"
               >
-                Iniciar sesión (Login)
+                {{ auth.isLoggedIn() ? '🔄 Cambiar de perfil' : 'Iniciar sesión (Login)' }}
               </button>
               <button
                 type="button"
@@ -315,55 +347,62 @@ import { ToastService } from './core/services/toast.service';
                 [style.color]="mode === 'register' ? 'var(--on-accent)' : 'var(--muted)'"
                 (click)="auth.openAuthModal('register')"
               >
-                Registrarse (Register)
+                + Nuevo perfil (Register)
               </button>
             </div>
 
-            @if (mode === 'login') {
+            @if (mode !== 'register') {
               <div class="panel-head" style="margin-bottom: 12px;">
                 <div>
-                  <h2>Iniciar sesión en spliy.IA</h2>
-                  <p class="sub">Ingresa tu correo o nombre de usuario, o selecciona una cuenta registrada.</p>
+                  <h2>{{ auth.isLoggedIn() ? 'Selecciona un perfil activo' : 'Iniciar sesión en spliy.IA' }}</h2>
+                  <p class="sub">
+                    Elige el <b>Perfil Administrador</b>, un <b>Perfil de Usuario</b> o ingresa con tus credenciales.
+                  </p>
                 </div>
               </div>
 
-              <form (ngSubmit)="submitLogin()" style="display: grid; gap: 13px; margin-bottom: 18px;">
-                <div class="form-group">
-                  <label>Correo electrónico o nombre de usuario</label>
-                  <input
-                    class="form-control"
-                    type="text"
-                    [(ngModel)]="loginCorreo"
-                    name="loginCorreo"
-                    placeholder="Ej. thomas@correo.com o tu nombre"
-                    required
-                  />
+              <!-- Tarjeta destacada: PERFIL DE ADMINISTRADOR -->
+              <div style="margin-bottom: 14px;">
+                <div style="font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 6px;">
+                  Perfil Administrativo:
                 </div>
-                <div class="form-group">
-                  <label>Contraseña</label>
-                  <input
-                    class="form-control"
-                    type="password"
-                    [(ngModel)]="loginPassword"
-                    name="loginPassword"
-                    placeholder="••••••••"
-                    required
-                  />
+                <div
+                  style="display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface-alt); cursor: pointer;"
+                  [style.border-color]="auth.isLoggedIn() && auth.isAdminSession() ? 'var(--accent)' : 'var(--border)'"
+                  (click)="entrarComoAdmin()"
+                >
+                  <div style="display: flex; align-items: center; gap: 11px;">
+                    <div
+                      class="person-bubble"
+                      style="width: 36px; height: 36px; background: var(--accent-soft); color: var(--accent); font-weight: 900;"
+                    >
+                      🛡️
+                    </div>
+                    <div>
+                      <strong style="font-size: 13px; display: block;">Administrador spliy.IA</strong>
+                      <small style="font-size: 11px; color: var(--muted);">admin&#64;spliy.ia · Control total del sistema</small>
+                    </div>
+                  </div>
+                  @if (auth.isLoggedIn() && auth.isAdminSession()) {
+                    <span class="badge-status badge-success">Perfil activo</span>
+                  } @else {
+                    <span class="btn-primary btn-sm" style="padding: 5px 10px; font-size: 11px;">
+                      Usar Admin →
+                    </span>
+                  }
                 </div>
-                <button class="btn-primary" type="submit" style="width: 100%; margin-top: 4px;">
-                  Iniciar sesión e ir a mi perfil
-                </button>
-              </form>
+              </div>
 
-              <div style="border-top: 1px solid var(--border); padding-top: 14px;">
-                <div style="font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 10px; text-transform: uppercase;">
-                  O entra con un clic a una cuenta registrada ({{ api.usuarios().length }}):
+              <!-- Lista de Perfiles de Usuario Estándar -->
+              <div style="margin-bottom: 16px;">
+                <div style="font-size: 10.5px; font-weight: 800; color: var(--muted); margin-bottom: 6px; text-transform: uppercase;">
+                  Perfiles de Usuario ({{ api.usuarios().length }}):
                 </div>
-                <div style="display: grid; gap: 8px; max-height: 200px; overflow-y: auto;">
+                <div style="display: grid; gap: 7px; max-height: 185px; overflow-y: auto;">
                   @for (u of api.usuarios(); track u.idUsuario) {
                     <div
                       style="display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                      [style.border-color]="auth.isLoggedIn() && auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
+                      [style.border-color]="auth.isLoggedIn() && !auth.isAdminSession() && auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
                       (click)="seleccionarCuentaRapida(u.idUsuario)"
                     >
                       <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
@@ -373,14 +412,44 @@ import { ToastService } from './core/services/toast.service';
                           <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
                         </div>
                       </div>
-                      @if (auth.isLoggedIn() && auth.currentUser().idUsuario === u.idUsuario) {
-                        <span class="badge-status badge-success">Activa</span>
+                      @if (auth.isLoggedIn() && !auth.isAdminSession() && auth.currentUser().idUsuario === u.idUsuario) {
+                        <span class="badge-status badge-success">Activo</span>
                       } @else {
-                        <span style="font-size: 11.5px; font-weight: 700; color: var(--accent);">Entrar →</span>
+                        <span style="font-size: 11.5px; font-weight: 700; color: var(--accent);">Cambiar →</span>
                       }
                     </div>
                   }
                 </div>
+              </div>
+
+              <!-- Ingreso por correo / credenciales -->
+              <div style="border-top: 1px solid var(--border); padding-top: 13px;">
+                <div style="font-size: 10.5px; font-weight: 800; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
+                  O ingresa con correo / usuario (escribe "admin" para Administrador):
+                </div>
+                <form (ngSubmit)="submitLogin()" style="display: grid; gap: 10px;">
+                  <div class="form-grid">
+                    <input
+                      class="form-control"
+                      type="text"
+                      [(ngModel)]="loginCorreo"
+                      name="loginCorreo"
+                      placeholder="Correo, nombre o 'admin'"
+                      required
+                    />
+                    <input
+                      class="form-control"
+                      type="password"
+                      [(ngModel)]="loginPassword"
+                      name="loginPassword"
+                      placeholder="Contraseña"
+                      required
+                    />
+                  </div>
+                  <button class="btn-primary" type="submit" style="width: 100%;">
+                    Entrar con estas credenciales
+                  </button>
+                </form>
               </div>
             } @else {
               <div class="panel-head" style="margin-bottom: 12px;">
@@ -506,27 +575,40 @@ export class AppComponent {
     }
   }
 
-  abrirModalAuth(mode: 'login' | 'register'): void {
+  abrirModalAuth(mode: 'login' | 'register' | 'switch'): void {
     this.loginCorreo = '';
     this.loginPassword = '';
     this.auth.openAuthModal(mode);
   }
 
+  entrarComoAdmin(): void {
+    this.auth.loginAsAdmin();
+    this.auth.closeAuthModal();
+    this.router.navigate(['/admin/resumen']);
+  }
+
+  cerrarSesion(): void {
+    this.auth.logout();
+    this.router.navigate(['/usuario/perfil']);
+  }
+
   seleccionarCuentaRapida(idUsuario: number): void {
     this.auth.selectUser(idUsuario);
-    this.auth.setRole('user', true);
     this.auth.closeAuthModal();
     this.router.navigate(['/usuario/perfil']);
   }
 
   submitLogin(): void {
     if (!this.loginCorreo.trim()) return;
-    this.auth.loginWithCredentials(this.loginCorreo, this.loginPassword).subscribe(() => {
+    this.auth.loginWithCredentials(this.loginCorreo, this.loginPassword).subscribe(user => {
       this.loginCorreo = '';
       this.loginPassword = '';
-      this.auth.setRole('user', true);
       this.auth.closeAuthModal();
-      this.router.navigate(['/usuario/perfil']);
+      if (this.auth.isAdminSession() || user.idUsuario === 999) {
+        this.router.navigate(['/admin/resumen']);
+      } else {
+        this.router.navigate(['/usuario/perfil']);
+      }
     });
   }
 
