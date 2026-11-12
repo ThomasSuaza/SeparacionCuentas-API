@@ -12,6 +12,7 @@ export class AuthService {
 
   readonly activeUserId = signal<number>(this.loadSavedUserId());
   readonly activeRole = signal<WorkspaceRole>(this.loadSavedRole());
+  readonly authModalMode = signal<'login' | 'register' | null>(null);
 
   readonly currentUser = computed<UsuarioResponse>(() => {
     const list = this.api.usuarios();
@@ -20,9 +21,9 @@ export class AuthService {
     return (
       list[0] || {
         idUsuario: 1,
-        nombre: 'Thomas Suaza',
-        correo: 'thomas.suaza@splitbill.ai',
-        telefono: '+57 300 412 8901'
+        nombre: 'Thomas',
+        correo: 'thomas@correo.com',
+        telefono: '3001112233'
       }
     );
   });
@@ -52,6 +53,14 @@ export class AuthService {
     }
   }
 
+  openAuthModal(mode: 'login' | 'register'): void {
+    this.authModalMode.set(mode);
+  }
+
+  closeAuthModal(): void {
+    this.authModalMode.set(null);
+  }
+
   selectUser(idUsuario: number, silent = false): void {
     this.activeUserId.set(idUsuario);
     try {
@@ -62,9 +71,20 @@ export class AuthService {
     if (!silent) {
       const user = this.api.usuarios().find(u => u.idUsuario === idUsuario);
       if (user) {
-        this.toast.show(`Sesión activa cambiada a ${user.nombre}.`, 'info');
+        this.toast.show(`Sesión iniciada como ${user.nombre}.`, 'success');
       }
     }
+  }
+
+  loginByEmail(correo: string): boolean {
+    const normalized = correo.trim().toLowerCase();
+    const user = this.api.usuarios().find(u => u.correo.toLowerCase() === normalized);
+    if (!user) {
+      this.toast.show('No se encontró ningún usuario con ese correo. Puedes registrarte.', 'warning');
+      return false;
+    }
+    this.selectUser(user.idUsuario);
+    return true;
   }
 
   setRole(role: WorkspaceRole, silent = false): void {
@@ -76,7 +96,7 @@ export class AuthService {
     }
     if (!silent) {
       const label = role === 'admin' ? 'Consola de Administrador' : 'Portal de Usuario';
-      this.toast.show(`Modo cambiado a: ${label}`, 'info');
+      this.toast.show(`Vista activa: ${label}`, 'info');
     }
   }
 }

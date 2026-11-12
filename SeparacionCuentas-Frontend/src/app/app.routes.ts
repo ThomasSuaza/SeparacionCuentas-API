@@ -13,21 +13,21 @@ import { AdminSistemaComponent } from './features/admin-console/admin-sistema.co
 
 export const routes: Routes = [
   { path: '', redirectTo: 'usuario/panel', pathMatch: 'full' },
-  { path: 'bienvenida', component: LandingComponent, title: 'Bienvenida | SplitBill AI' },
+  { path: 'bienvenida', component: LandingComponent, title: 'Bienvenida | spliy.IA' },
 
-  // Apartado de Usuario (User Portal)
-  { path: 'usuario/panel', component: UserDashboardComponent, title: 'Panel General | SplitBill AI' },
-  { path: 'usuario/cuentas', component: UserCuentasComponent, title: 'Mis Cuentas | SplitBill AI' },
-  { path: 'usuario/pagos', component: UserPagosComponent, title: 'Mis Pagos | SplitBill AI' },
-  { path: 'usuario/saldos', component: UserSaldosComponent, title: 'Saldos y Devoluciones | SplitBill AI' },
-  { path: 'usuario/perfil', component: UserPerfilComponent, title: 'Mi Perfil | SplitBill AI' },
+  // Portal de Usuario
+  { path: 'usuario/panel', component: UserDashboardComponent, title: 'Panel General | spliy.IA' },
+  { path: 'usuario/cuentas', component: UserCuentasComponent, title: 'Mis Cuentas | spliy.IA' },
+  { path: 'usuario/pagos', component: UserPagosComponent, title: 'Mis Pagos | spliy.IA' },
+  { path: 'usuario/saldos', component: UserSaldosComponent, title: 'Saldos y Devoluciones | spliy.IA' },
+  { path: 'usuario/perfil', component: UserPerfilComponent, title: 'Mi Perfil | spliy.IA' },
 
-  // Consola de Administrador (Admin Console)
-  { path: 'admin/resumen', component: AdminOverviewComponent, title: 'Consola Admin | SplitBill AI' },
-  { path: 'admin/usuarios', component: AdminUsuariosComponent, title: 'Admin Usuarios | SplitBill AI' },
-  { path: 'admin/cuentas', component: AdminCuentasComponent, title: 'Admin Cuentas | SplitBill AI' },
-  { path: 'admin/divisiones', component: AdminDivisionesComponent, title: 'Admin Divisiones | SplitBill AI' },
-  { path: 'admin/sistema', component: AdminSistemaComponent, title: 'Diagnóstico API .NET | SplitBill AI' },
+  // Consola de Administrador
+  { path: 'admin/resumen', component: AdminOverviewComponent, title: 'Administración | spliy.IA' },
+  { path: 'admin/usuarios', component: AdminUsuariosComponent, title: 'Usuarios | spliy.IA' },
+  { path: 'admin/cuentas', component: AdminCuentasComponent, title: 'Cuentas | spliy.IA' },
+  { path: 'admin/divisiones', component: AdminDivisionesComponent, title: 'Divisiones | spliy.IA' },
+  { path: 'admin/sistema', component: AdminSistemaComponent, title: 'Sistema | spliy.IA' },
 
   { path: '**', redirectTo: 'usuario/panel' }
 ];

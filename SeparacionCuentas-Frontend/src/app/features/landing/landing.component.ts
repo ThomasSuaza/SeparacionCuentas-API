@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -15,27 +15,23 @@ import { ThemeService } from '../../core/services/theme.service';
       <!-- Hero Principal -->
       <section class="panel" style="padding: clamp(22px, 4vw, 34px); position: relative; overflow: hidden;">
         <div style="max-width: 740px; position: relative; z-index: 1;">
-          <div class="eyebrow">SPLITBILL AI · SLIT.IA</div>
+          <div class="eyebrow">SPLIY.IA · CUENTAS COMPARTIDAS</div>
           <h1 class="page-title" style="font-size: clamp(26px, 3.4vw, 40px); margin-bottom: 12px;">
             Divide cuentas grupales sin discusiones ni cálculos manuales.
           </h1>
           <p class="intro" style="font-size: 14px; max-width: 620px; margin-bottom: 22px;">
-            Registra gastos compartidos, asigna cuotas de forma equitativa o personalizada y lleva el control en tiempo real de los pagos y saldos de cada participante.
+            Inicia sesión o regístrate en <b>spliy.IA</b> para añadir nuevas cuentas, dividir gastos entre amigos y llevar el control en tiempo real de quién ha pagado.
           </p>
 
           <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <button class="btn-primary" type="button" (click)="enterPortal('user')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-              Ir al Portal de Usuario
+            <button class="btn-primary" type="button" (click)="auth.openAuthModal('login')">
+              Iniciar sesión
             </button>
-            <button class="btn-outline" type="button" (click)="enterPortal('admin')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
-              </svg>
-              Consola de Administrador
+            <button class="btn-outline" type="button" (click)="auth.openAuthModal('register')">
+              + Registrarse
+            </button>
+            <button class="btn-outline" type="button" (click)="irACrearCuenta()">
+              + Añadir cuenta compartida
             </button>
           </div>
         </div>
@@ -46,8 +42,8 @@ import { ThemeService } from '../../core/services/theme.service';
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>Selecciona tu perfil activo</h2>
-              <p class="sub">Elige un participante para consultar sus cuentas, pagos y saldos.</p>
+              <h2>Cuentas de usuario registradas</h2>
+              <p class="sub">Selecciona tu perfil para entrar directamente a tus cuentas y pagos.</p>
             </div>
             <span class="pill">{{ api.usuarios().length }} usuarios</span>
           </div>
@@ -69,9 +65,9 @@ import { ThemeService } from '../../core/services/theme.service';
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid var(--border); font-size: 11px;">
                   <span style="color: var(--muted);">{{ u.telefono || 'Sin teléfono' }}</span>
                   @if (auth.currentUser().idUsuario === u.idUsuario) {
-                    <span class="badge-status badge-success">Activo</span>
+                    <span class="badge-status badge-success">Activa</span>
                   } @else {
-                    <span style="color: var(--accent); font-weight: 700;">Ingresar →</span>
+                    <span style="color: var(--accent); font-weight: 700;">Iniciar sesión →</span>
                   }
                 </div>
               </div>
@@ -79,38 +75,68 @@ import { ThemeService } from '../../core/services/theme.service';
           </div>
         </section>
 
-        <!-- Registro Rápido de Nuevo Usuario -->
+        <!-- Formulario directo de Login / Register -->
         <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Crear cuenta de usuario</h2>
-              <p class="sub">Registra un nuevo participante en la plataforma.</p>
-            </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-alt); padding: 4px; border-radius: 11px; border: 1px solid var(--border); margin-bottom: 16px;">
+            <button
+              type="button"
+              style="border: 0; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;"
+              [style.background]="tab() === 'register' ? 'var(--accent)' : 'transparent'"
+              [style.color]="tab() === 'register' ? 'var(--on-accent)' : 'var(--muted)'"
+              (click)="tab.set('register')"
+            >
+              Registrarse
+            </button>
+            <button
+              type="button"
+              style="border: 0; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;"
+              [style.background]="tab() === 'login' ? 'var(--accent)' : 'transparent'"
+              [style.color]="tab() === 'login' ? 'var(--on-accent)' : 'var(--muted)'"
+              (click)="tab.set('login')"
+            >
+              Iniciar sesión
+            </button>
           </div>
 
-          <form (ngSubmit)="registrarUsuario()" style="display: grid; gap: 13px;">
-            <div class="form-group">
-              <label>Nombre completo</label>
-              <input class="form-control" type="text" [(ngModel)]="nuevoNombre" name="nombre" placeholder="Ej. Laura Camila Ríos" required />
-            </div>
-            <div class="form-group">
-              <label>Correo electrónico</label>
-              <input class="form-control" type="email" [(ngModel)]="nuevoCorreo" name="correo" placeholder="laura.rios@correo.com" required />
-            </div>
-            <div class="form-grid">
+          @if (tab() === 'register') {
+            <form (ngSubmit)="registrarUsuario()" style="display: grid; gap: 13px;">
               <div class="form-group">
-                <label>Teléfono / Celular</label>
-                <input class="form-control" type="text" [(ngModel)]="nuevoTelefono" name="telefono" placeholder="+57 310 000 0000" />
+                <label>Nombre completo</label>
+                <input class="form-control" type="text" [(ngModel)]="nuevoNombre" name="nombre" placeholder="Ej. Laura Camila Ríos" required />
+              </div>
+              <div class="form-group">
+                <label>Correo electrónico</label>
+                <input class="form-control" type="email" [(ngModel)]="nuevoCorreo" name="correo" placeholder="laura.rios@correo.com" required />
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Teléfono / Celular</label>
+                  <input class="form-control" type="text" [(ngModel)]="nuevoTelefono" name="telefono" placeholder="310 000 0000" />
+                </div>
+                <div class="form-group">
+                  <label>Contraseña</label>
+                  <input class="form-control" type="password" [(ngModel)]="nuevoPassword" name="password" placeholder="••••••••" required />
+                </div>
+              </div>
+              <button class="btn-primary" type="submit" style="margin-top: 6px; width: 100%;">
+                Crear cuenta e ingresar
+              </button>
+            </form>
+          } @else {
+            <form (ngSubmit)="iniciarSesionCorreo()" style="display: grid; gap: 13px;">
+              <div class="form-group">
+                <label>Correo electrónico</label>
+                <input class="form-control" type="email" [(ngModel)]="correoLogin" name="correoLogin" placeholder="thomas@correo.com" required />
               </div>
               <div class="form-group">
                 <label>Contraseña</label>
-                <input class="form-control" type="password" [(ngModel)]="nuevoPassword" name="password" placeholder="••••••••" required />
+                <input class="form-control" type="password" [(ngModel)]="passwordLogin" name="passwordLogin" placeholder="••••••••" required />
               </div>
-            </div>
-            <button class="btn-primary" type="submit" style="margin-top: 6px; width: 100%;">
-              Registrar e Ingresar
-            </button>
-          </form>
+              <button class="btn-primary" type="submit" style="margin-top: 6px; width: 100%;">
+                Entrar a spliy.IA
+              </button>
+            </form>
+          }
         </section>
       </div>
     </div>
@@ -122,24 +148,33 @@ export class LandingComponent {
   readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
 
+  readonly tab = signal<'register' | 'login'>('register');
+
   nuevoNombre = '';
   nuevoCorreo = '';
   nuevoTelefono = '';
   nuevoPassword = '';
 
-  enterPortal(role: 'user' | 'admin'): void {
-    this.auth.setRole(role);
-    if (role === 'admin') {
-      this.router.navigate(['/admin/resumen']);
-    } else {
-      this.router.navigate(['/usuario/panel']);
-    }
+  correoLogin = '';
+  passwordLogin = '';
+
+  irACrearCuenta(): void {
+    this.auth.setRole('user', true);
+    this.router.navigate(['/usuario/cuentas']);
   }
 
   loginAsUser(idUsuario: number): void {
     this.auth.selectUser(idUsuario);
     this.auth.setRole('user', true);
     this.router.navigate(['/usuario/panel']);
+  }
+
+  iniciarSesionCorreo(): void {
+    if (!this.correoLogin.trim()) return;
+    if (this.auth.loginByEmail(this.correoLogin)) {
+      this.auth.setRole('user', true);
+      this.router.navigate(['/usuario/panel']);
+    }
   }
 
   registrarUsuario(): void {
@@ -158,7 +193,7 @@ export class LandingComponent {
         this.nuevoPassword = '';
         this.auth.selectUser(created.idUsuario);
         this.auth.setRole('user', true);
-        this.router.navigate(['/usuario/panel']);
+        this.router.navigate(['/usuario/cuentas']);
       });
   }
 }

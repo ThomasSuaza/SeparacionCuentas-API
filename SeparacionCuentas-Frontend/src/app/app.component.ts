@@ -24,8 +24,8 @@ import { ToastService } from './core/services/toast.service';
             <a routerLink="/bienvenida" style="display: flex; align-items: center; gap: 11px;" (click)="closeMobileMenu()">
               <div class="mark">S</div>
               <div class="brand-name">
-                slit<span style="color: var(--accent)">.</span>ia
-                <small>SPLITBILL AI</small>
+                spliy<span style="color: var(--accent)">.IA</span>
+                <small>CUENTAS COMPARTIDAS</small>
               </div>
             </a>
             <button type="button" class="sidebar-close-btn" (click)="closeMobileMenu()" aria-label="Cerrar menú">
@@ -232,18 +232,13 @@ import { ToastService } from './core/services/toast.service';
               </button>
 
               <div class="crumb">
-                <span>SplitBill AI</span>
+                <span>spliy.IA</span>
                 <span style="opacity: 0.45">/</span>
                 <b>{{ auth.activeRole() === 'admin' ? 'Consola de Administrador' : 'Portal de Usuario' }}</b>
               </div>
             </div>
 
             <div class="top-right">
-              <a routerLink="/admin/sistema" class="api-status-pill" title="Estado del servidor">
-                <span class="status-dot" [class.demo]="!api.isApiConnected()"></span>
-                <span>{{ api.isApiConnected() ? 'En línea' : 'Modo local' }}</span>
-              </a>
-
               <!-- Un solo botón limpio para cambiar entre Modo Claro y Modo Oscuro -->
               <button
                 type="button"
@@ -260,20 +255,34 @@ import { ToastService } from './core/services/toast.service';
                 }
               </button>
 
-              <!-- Selector Rápido de Usuario Activo -->
-              <div class="profile-Menu">
+              <!-- Botones de Login y Register -->
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                (click)="abrirModalAuth('login')"
+              >
+                Iniciar sesión
+              </button>
+
+              <button
+                type="button"
+                class="btn-primary btn-sm"
+                (click)="abrirModalAuth('register')"
+              >
+                + Registrarse
+              </button>
+
+              <!-- Usuario activo -->
+              <div
+                class="profile-Menu"
+                style="cursor: pointer;"
+                (click)="abrirModalAuth('login')"
+                title="Cambiar de cuenta o añadir usuario"
+              >
                 <div class="avatar-circle">{{ auth.iniciales() }}</div>
-                <div>
-                  <select
-                    class="user-select-dropdown"
-                    [ngModel]="auth.currentUser().idUsuario"
-                    (ngModelChange)="auth.selectUser($event)"
-                    aria-label="Cambiar usuario activo"
-                  >
-                    @for (u of api.usuarios(); track u.idUsuario) {
-                      <option [ngValue]="u.idUsuario">{{ u.nombre }}</option>
-                    }
-                  </select>
+                <div style="line-height: 1.2;">
+                  <strong style="font-size: 12px; display: block;">{{ auth.currentUser().nombre }}</strong>
+                  <small style="font-size: 10px; color: var(--muted);">{{ auth.currentUser().correo }}</small>
                 </div>
               </div>
             </div>
@@ -286,11 +295,170 @@ import { ToastService } from './core/services/toast.service';
 
           <!-- PIE DE PÁGINA LIMPIO -->
           <footer class="app-footer">
-            <span>© 2026 SplitBill AI (slit.ia)</span>
+            <span>© 2026 spliy.IA</span>
             <span>Gestión inteligente de cuentas compartidas</span>
           </footer>
         </main>
       </div>
+
+      <!-- MODAL GLOBAL DE LOGIN Y REGISTER -->
+      @if (auth.authModalMode(); as mode) {
+        <div class="modal-backdrop" (click)="auth.closeAuthModal()">
+          <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
+            <!-- Pestañas Login / Register -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--surface-alt); padding: 5px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 18px;">
+              <button
+                type="button"
+                style="border: 0; padding: 9px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 800; transition: all 0.15s ease;"
+                [style.background]="mode === 'login' ? 'var(--accent)' : 'transparent'"
+                [style.color]="mode === 'login' ? 'var(--on-accent)' : 'var(--muted)'"
+                (click)="auth.openAuthModal('login')"
+              >
+                Iniciar sesión (Login)
+              </button>
+              <button
+                type="button"
+                style="border: 0; padding: 9px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 800; transition: all 0.15s ease;"
+                [style.background]="mode === 'register' ? 'var(--accent)' : 'transparent'"
+                [style.color]="mode === 'register' ? 'var(--on-accent)' : 'var(--muted)'"
+                (click)="auth.openAuthModal('register')"
+              >
+                Registrarse (Register)
+              </button>
+            </div>
+
+            @if (mode === 'login') {
+              <div class="panel-head" style="margin-bottom: 12px;">
+                <div>
+                  <h2>Bienvenido a spliy.IA</h2>
+                  <p class="sub">Ingresa con tu correo electrónico o selecciona tu cuenta para añadir y dividir gastos.</p>
+                </div>
+              </div>
+
+              <form (ngSubmit)="submitLogin()" style="display: grid; gap: 13px; margin-bottom: 18px;">
+                <div class="form-group">
+                  <label>Correo electrónico</label>
+                  <input
+                    class="form-control"
+                    type="email"
+                    [(ngModel)]="loginCorreo"
+                    name="loginCorreo"
+                    placeholder="ejemplo@correo.com"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Contraseña</label>
+                  <input
+                    class="form-control"
+                    type="password"
+                    [(ngModel)]="loginPassword"
+                    name="loginPassword"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <button class="btn-primary" type="submit" style="width: 100%; margin-top: 4px;">
+                  Entrar a mi cuenta
+                </button>
+              </form>
+
+              <div style="border-top: 1px solid var(--border); padding-top: 14px;">
+                <div style="font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 10px; text-transform: uppercase;">
+                  O selecciona una cuenta registrada ({{ api.usuarios().length }}):
+                </div>
+                <div style="display: grid; gap: 8px; max-height: 200px; overflow-y: auto;">
+                  @for (u of api.usuarios(); track u.idUsuario) {
+                    <div
+                      style="display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
+                      [style.border-color]="auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
+                      (click)="seleccionarCuentaRapida(u.idUsuario)"
+                    >
+                      <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <div class="person-bubble" style="width: 32px; height: 32px;">{{ api.getIniciales(u.nombre) }}</div>
+                        <div style="min-width: 0;">
+                          <strong style="font-size: 12.5px; display: block;">{{ u.nombre }}</strong>
+                          <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
+                        </div>
+                      </div>
+                      @if (auth.currentUser().idUsuario === u.idUsuario) {
+                        <span class="badge-status badge-success">Activa</span>
+                      } @else {
+                        <span style="font-size: 11.5px; font-weight: 700; color: var(--accent);">Usar →</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="panel-head" style="margin-bottom: 12px;">
+                <div>
+                  <h2>Crear cuenta en spliy.IA</h2>
+                  <p class="sub">Registra un nuevo usuario para añadir cuentas y participar en divisiones.</p>
+                </div>
+              </div>
+
+              <form (ngSubmit)="submitRegister()" style="display: grid; gap: 13px;">
+                <div class="form-group">
+                  <label>Nombre completo</label>
+                  <input
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="regNombre"
+                    name="regNombre"
+                    placeholder="Ej. Camilo Restrepo"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Correo electrónico</label>
+                  <input
+                    class="form-control"
+                    type="email"
+                    [(ngModel)]="regCorreo"
+                    name="regCorreo"
+                    placeholder="camilo@correo.com"
+                    required
+                  />
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Teléfono / Celular</label>
+                    <input
+                      class="form-control"
+                      type="text"
+                      [(ngModel)]="regTelefono"
+                      name="regTelefono"
+                      placeholder="300 000 0000"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Contraseña</label>
+                    <input
+                      class="form-control"
+                      type="password"
+                      [(ngModel)]="regPassword"
+                      name="regPassword"
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+                  <button class="btn-outline" type="button" (click)="auth.closeAuthModal()">Cancelar</button>
+                  <button class="btn-primary" type="submit">
+                    Crear cuenta e ingresar
+                  </button>
+                </div>
+              </form>
+            }
+          </div>
+        </div>
+      }
 
       <!-- SISTEMA GLOBAL DE NOTIFICACIONES TOAST -->
       <div class="toast-container" role="status" aria-live="polite">
@@ -319,6 +487,14 @@ export class AppComponent {
 
   readonly mobileMenuOpen = signal<boolean>(false);
 
+  loginCorreo = '';
+  loginPassword = '';
+
+  regNombre = '';
+  regCorreo = '';
+  regTelefono = '';
+  regPassword = '';
+
   closeMobileMenu(): void {
     this.mobileMenuOpen.set(false);
   }
@@ -336,5 +512,44 @@ export class AppComponent {
     } else {
       this.router.navigate(['/usuario/panel']);
     }
+  }
+
+  abrirModalAuth(mode: 'login' | 'register'): void {
+    this.loginCorreo = this.auth.currentUser().correo;
+    this.loginPassword = '';
+    this.auth.openAuthModal(mode);
+  }
+
+  seleccionarCuentaRapida(idUsuario: number): void {
+    this.auth.selectUser(idUsuario);
+    this.auth.closeAuthModal();
+  }
+
+  submitLogin(): void {
+    if (!this.loginCorreo.trim()) return;
+    const ok = this.auth.loginByEmail(this.loginCorreo);
+    if (ok) {
+      this.auth.closeAuthModal();
+    }
+  }
+
+  submitRegister(): void {
+    if (!this.regNombre.trim() || !this.regCorreo.trim()) return;
+    this.api
+      .createUsuario({
+        nombre: this.regNombre.trim(),
+        correo: this.regCorreo.trim(),
+        telefono: this.regTelefono.trim() || null,
+        passwordHash: this.regPassword ? `HASH_${btoa(this.regPassword)}` : 'HASH_DEFAULT_2026'
+      })
+      .subscribe(created => {
+        this.regNombre = '';
+        this.regCorreo = '';
+        this.regTelefono = '';
+        this.regPassword = '';
+        this.auth.selectUser(created.idUsuario);
+        this.auth.closeAuthModal();
+        this.router.navigate(['/usuario/cuentas']);
+      });
   }
 }

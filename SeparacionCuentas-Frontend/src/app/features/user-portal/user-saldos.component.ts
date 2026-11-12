@@ -158,7 +158,7 @@ export class UserSaldosComponent {
       s => `• ${s.nombre}: ${s.tipoMovimiento} $${s.saldo.toLocaleString('es-CO')} COP (Cuota: $${s.montoAsignado.toLocaleString('es-CO')})`
     );
     const msg =
-      `📊 *Resumen SplitBill AI*\n` +
+      `📊 *Resumen spliy.IA*\n` +
       `Cuenta: *${cuenta?.descripcion || '#' + res.idCuenta}*\n` +
       `Total: $${res.montoTotalCuenta.toLocaleString('es-CO')} COP (${res.estadoDistribucion})\n\n` +
       lineas.join('\n');
