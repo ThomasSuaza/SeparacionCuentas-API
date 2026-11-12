@@ -10,29 +10,28 @@ import { ToastService } from '../../core/services/toast.service';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">MOTOR DE DEVOLUCIONES Y CUADRE (RF10 · RF11 · RF12)</div>
-        <h1 class="page-title">Saldos, Devoluciones y Estado de Distribución</h1>
+        <div class="eyebrow">SALDOS Y DEVOLUCIONES</div>
+        <h1 class="page-title">Balance por Cuenta</h1>
         <p class="intro">
-          Visualización directa del DTO <code>ResumenDevolucionCuentaResponse</code> generado por
-          <code>GET /api/Cuenta/{{ '{' }}idCuenta{{ '}' }}/devoluciones</code>.
+          Consulta cuánto adelantó el pagador, cuánto ha abonado cada participante y el estado de la distribución.
         </p>
       </div>
       <button class="btn-outline" type="button" (click)="copiarResumenCobro()">
-        📲 Copiar Resumen para WhatsApp
+        📲 Copiar resumen para WhatsApp
       </button>
     </div>
 
-    <!-- Selector de cuenta a auditar -->
+    <!-- Selector de cuenta -->
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
       @for (c of api.cuentas(); track c.idCuenta) {
         <button
           type="button"
           class="btn-outline btn-sm"
-          [style.border-color]="cuentaId() === c.idCuenta ? 'var(--accent)' : 'var(--border)'"
-          [style.background]="cuentaId() === c.idCuenta ? 'var(--accent-soft)' : 'var(--surface)'"
+          [style.border-color]="cuentaActivaId() === c.idCuenta ? 'var(--accent)' : 'var(--border)'"
+          [style.background]="cuentaActivaId() === c.idCuenta ? 'var(--accent-soft)' : 'var(--surface)'"
           (click)="cuentaId.set(c.idCuenta)"
         >
-          Cuenta #00{{ c.idCuenta }} · {{ c.descripcion }}
+          {{ c.descripcion }}
         </button>
       }
     </div>
@@ -42,19 +41,19 @@ import { ToastService } from '../../core/services/toast.service';
         <div class="stat-card">
           <div class="tiny">Monto Total Cuenta</div>
           <strong>&#36;{{ res.montoTotalCuenta | number:'1.0-0' }}</strong>
-          <small>COP · Factura original</small>
+          <small>COP · Valor total</small>
         </div>
 
         <div class="stat-card">
-          <div class="tiny">Suma Total Divisiones</div>
+          <div class="tiny">Total Distribuido</div>
           <strong>&#36;{{ res.totalDivisiones | number:'1.0-0' }}</strong>
-          <small>COP · Asignado en <code>dbo.Division</code></small>
+          <small>COP · Suma de cuotas</small>
         </div>
 
         <div class="stat-card">
-          <div class="tiny">Diferencia de Cuadre</div>
+          <div class="tiny">Diferencia</div>
           <strong>&#36;{{ res.diferencia | number:'1.0-0' }}</strong>
-          <small><code>Math.Abs(MontoTotal - TotalDivisiones)</code></small>
+          <small>COP · Por cuadrar</small>
         </div>
 
         <div class="stat-card">
@@ -70,43 +69,39 @@ import { ToastService } from '../../core/services/toast.service';
           >
             {{ res.estadoDistribucion }}
           </strong>
-          <small>Validación automática del controlador .NET</small>
+          <small>Estado actual de la cuenta</small>
         </div>
       </div>
 
       <section class="panel">
         <div class="panel-head">
           <div>
-            <h2>Tabla de Saldos y Devoluciones por Participante (<code>SaldoUsuarioResponse</code>)</h2>
+            <h2>Saldos por participante</h2>
             <p class="sub">
-              El usuario pagador refleja cuánto adelantó y cuánto le falta por recibir (<code>RECIBE</code> / <code>SALDADO</code>).
-              Los demás participantes muestran cuánto les falta pagar (<code>PAGA</code> / <code>SALDADO</code>).
+              Detalle de quién recibe dinero, quién tiene pago pendiente y quién ya está al día.
             </p>
           </div>
-          <span class="pill">GET /api/Cuenta/{{ res.idCuenta }}/devoluciones</span>
         </div>
 
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>ID Usuario</th>
                 <th>Participante</th>
-                <th>Rol en Cuenta</th>
-                <th>Monto Asignado (Su cuota)</th>
-                <th>Monto Adelantado</th>
-                <th>Saldo Pendiente</th>
-                <th>Tipo Movimiento</th>
+                <th>Rol</th>
+                <th>Cuota asignada</th>
+                <th>Monto adelantado</th>
+                <th>Saldo</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
               @for (s of res.saldos; track s.idUsuario) {
                 <tr>
-                  <td><b>#{{ s.idUsuario }}</b></td>
                   <td><strong>{{ s.nombre }}</strong></td>
                   <td>
                     @if (s.esPagador) {
-                      <span class="badge-status badge-info">Pagador Inicial</span>
+                      <span class="badge-status badge-info">Pagador</span>
                     } @else {
                       <span style="color: var(--muted); font-size: 11.5px;">Participante</span>
                     }
@@ -145,9 +140,16 @@ export class UserSaldosComponent {
   readonly api = inject(SeparacionCuentasService);
   private readonly toast = inject(ToastService);
 
-  readonly cuentaId = signal<number>(1);
+  readonly cuentaId = signal<number>(0);
 
-  readonly resumen = computed(() => this.api.calcularDevolucionesLocal(this.cuentaId()));
+  readonly cuentaActivaId = computed(() => {
+    const manual = this.cuentaId();
+    const list = this.api.cuentas();
+    if (manual && list.some(c => c.idCuenta === manual)) return manual;
+    return list[0]?.idCuenta || 1;
+  });
+
+  readonly resumen = computed(() => this.api.calcularDevolucionesLocal(this.cuentaActivaId()));
 
   copiarResumenCobro(): void {
     const res = this.resumen();
@@ -156,7 +158,7 @@ export class UserSaldosComponent {
       s => `• ${s.nombre}: ${s.tipoMovimiento} $${s.saldo.toLocaleString('es-CO')} COP (Cuota: $${s.montoAsignado.toLocaleString('es-CO')})`
     );
     const msg =
-      `📊 *Resumen SplitBill AI (slit.ia)*\n` +
+      `📊 *Resumen SplitBill AI*\n` +
       `Cuenta: *${cuenta?.descripcion || '#' + res.idCuenta}*\n` +
       `Total: $${res.montoTotalCuenta.toLocaleString('es-CO')} COP (${res.estadoDistribucion})\n\n` +
       lineas.join('\n');
@@ -164,6 +166,6 @@ export class UserSaldosComponent {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(msg);
     }
-    this.toast.show('Resumen de saldos copiado para enviar por WhatsApp.', 'success');
+    this.toast.show('Resumen copiado para compartir.', 'success');
   }
 }

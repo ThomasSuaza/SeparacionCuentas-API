@@ -22,14 +22,14 @@ interface ParticipanteDraft {
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">GESTIÓN DE CUENTAS Y DIVISIÓN INTELIGENTE (RF02 · RF03 · RF06)</div>
-        <h1 class="page-title">Mis Cuentas y Calculadora SplitBill</h1>
+        <div class="eyebrow">MIS CUENTAS</div>
+        <h1 class="page-title">Cuentas y División de Gastos</h1>
         <p class="intro">
-          Crea nuevas cuentas, selecciona quién pagó la factura y distribuye el valor en partes iguales, por porcentaje o por consumo individual.
+          Crea nuevas cuentas, selecciona quién pagó la factura y distribuye el valor en partes iguales o por consumo individual.
         </p>
       </div>
       <button class="btn-primary" type="button" (click)="abrirCreadorCuenta()">
-        + Crear y Dividir Nueva Cuenta
+        + Nueva cuenta
       </button>
     </div>
 
@@ -41,7 +41,7 @@ interface ParticipanteDraft {
         [style.border-color]="filtro() === 'todas' ? 'var(--accent)' : 'var(--border)'"
         (click)="filtro.set('todas')"
       >
-        Todas las cuentas ({{ api.cuentas().length }})
+        Todas ({{ api.cuentas().length }})
       </button>
       <button
         type="button"
@@ -49,7 +49,7 @@ interface ParticipanteDraft {
         [style.border-color]="filtro() === 'pagadas_por_mi' ? 'var(--accent)' : 'var(--border)'"
         (click)="filtro.set('pagadas_por_mi')"
       >
-        Pagadas por {{ auth.currentUser().nombre }} (GET /api/Cuenta/usuario/{{ auth.currentUser().idUsuario }})
+        Pagadas por mí
       </button>
       <button
         type="button"
@@ -62,14 +62,14 @@ interface ParticipanteDraft {
     </div>
 
     <!-- Listado de Cuentas en Tarjetas Interactivas -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px;">
+    <div class="cards-grid">
       @for (c of cuentasFiltradas(); track c.idCuenta) {
         @let dev = api.calcularDevolucionesLocal(c.idCuenta);
         <section class="panel" style="display: flex; flex-direction: column; justify-content: space-between;">
           <div>
             <div class="panel-head">
               <div>
-                <span style="font-size: 10.5px; font-weight: 800; color: var(--muted);">CUENTA #00{{ c.idCuenta }} · {{ c.fecha | date:'dd MMM yyyy' }}</span>
+                <span style="font-size: 10.5px; font-weight: 800; color: var(--muted);">{{ c.fecha | date:'dd MMM yyyy' }}</span>
                 <h2 style="margin-top: 3px;">{{ c.descripcion }}</h2>
               </div>
               <span
@@ -83,7 +83,7 @@ interface ParticipanteDraft {
             </div>
 
             <div class="account-banner" style="margin: 12px 0 16px; padding: 16px;">
-              <div class="overline">Monto Total Facturado</div>
+              <div class="overline">Monto Total</div>
               <div class="amount" style="font-size: 26px;">&#36;{{ c.montoTotal | number:'1.0-0' }} <span style="font-size: 11px; color: var(--muted);">COP</span></div>
               <div class="caption">
                 Pagado por: <b>{{ api.getNombreUsuario(c.idUsuarioPagador) }}</b>
@@ -96,7 +96,7 @@ interface ParticipanteDraft {
                 <strong>&#36;{{ dev.totalDivisiones | number:'1.0-0' }} COP</strong>
               </div>
               <div style="padding: 10px; border-radius: 10px; background: var(--surface-alt); border: 1px solid var(--border);">
-                <span style="color: var(--muted); display: block; font-size: 10px;">PENDIENTE RECAUDAR</span>
+                <span style="color: var(--muted); display: block; font-size: 10px;">POR COBRAR</span>
                 <strong style="color: var(--accent);">
                   &#36;{{ obtenerPendienteCobrar(dev) | number:'1.0-0' }} COP
                 </strong>
@@ -127,7 +127,7 @@ interface ParticipanteDraft {
 
           <div style="display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border);">
             <button class="btn-outline btn-sm" style="flex: 1;" type="button" (click)="abrirModalAgregarParticipante(c)">
-              + Agregar participante
+              + Participante
             </button>
             <button class="btn-danger btn-sm" type="button" (click)="eliminarCuenta(c.idCuenta)">
               Eliminar
@@ -137,31 +137,30 @@ interface ParticipanteDraft {
       }
     </div>
 
-    <!-- Modal: Asistente Completo de Creación de Cuenta + División Inteligente -->
+    <!-- Modal: Asistente Completo de Creación de Cuenta + División -->
     @if (mostrarModalNuevaCuenta()) {
       <div class="modal-backdrop" (click)="mostrarModalNuevaCuenta.set(false)">
-        <div class="modal-card" style="max-width: 720px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 680px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>Nueva Cuenta y Distribución Inteligente</h2>
-              <p class="sub">Crea el registro en <code>POST /api/Cuenta</code> y genera las cuotas en <code>POST /api/Division</code>.</p>
+              <h2>Nueva Cuenta Compartida</h2>
+              <p class="sub">Registra la cuenta y asigna la cuota de cada participante.</p>
             </div>
-            <span class="pill">Asistente SplitBill</span>
           </div>
 
           <div class="form-grid" style="margin-bottom: 16px;">
             <div class="form-group full">
-              <label>Descripción de la cuenta o salida</label>
+              <label>Descripción de la cuenta</label>
               <input
                 class="form-control"
                 type="text"
                 [(ngModel)]="formDescripcion"
-                placeholder="Ej. Cena en Andrés Carne de Res / Viaje a Guatapé"
+                placeholder="Ej. Cena con amigos / Viaje de fin de semana"
               />
             </div>
 
             <div class="form-group">
-              <label>Monto Total de la Factura (COP)</label>
+              <label>Monto Total (COP)</label>
               <input
                 class="form-control"
                 type="number"
@@ -173,10 +172,10 @@ interface ParticipanteDraft {
             </div>
 
             <div class="form-group">
-              <label>¿Quién pagó la cuenta inicialmente? (<code>id_usuario_pagador</code>)</label>
+              <label>Pagado inicialmente por</label>
               <select class="form-control" [(ngModel)]="formIdPagador">
                 @for (u of api.usuarios(); track u.idUsuario) {
-                  <option [ngValue]="u.idUsuario">{{ u.nombre }} (ID #{{ u.idUsuario }})</option>
+                  <option [ngValue]="u.idUsuario">{{ u.nombre }}</option>
                 }
               </select>
             </div>
@@ -185,7 +184,7 @@ interface ParticipanteDraft {
           <!-- Selector de modo de reparto -->
           <div style="margin-bottom: 14px;">
             <label style="font-size: 11.5px; font-weight: 750; display: block; margin-bottom: 6px;">
-              Método de división entre participantes:
+              Método de división:
             </label>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button
@@ -194,7 +193,7 @@ interface ParticipanteDraft {
                 [style.border-color]="modoReparto() === 'iguales' ? 'var(--accent)' : 'var(--border)'"
                 (click)="cambiarModoReparto('iguales')"
               >
-                ⚖️ Partes Iguales (Automático)
+                ⚖️ Partes iguales
               </button>
               <button
                 type="button"
@@ -202,7 +201,7 @@ interface ParticipanteDraft {
                 [style.border-color]="modoReparto() === 'personalizado' ? 'var(--accent)' : 'var(--border)'"
                 (click)="cambiarModoReparto('personalizado')"
               >
-                🧾 Monto Individual por Consumo
+                🧾 Monto personalizado
               </button>
             </div>
           </div>
@@ -214,8 +213,8 @@ interface ParticipanteDraft {
                 <tr>
                   <th>Incluir</th>
                   <th>Participante</th>
-                  <th>Monto Asignado (COP)</th>
-                  <th>Estado Inicial</th>
+                  <th>Cuota (COP)</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,7 +236,7 @@ interface ParticipanteDraft {
                     <td>
                       <input
                         class="form-control"
-                        style="width: 150px; padding: 6px 10px; font-size: 12px;"
+                        style="width: 140px; padding: 6px 10px; font-size: 12px;"
                         type="number"
                         [(ngModel)]="p.monto"
                         [disabled]="!p.seleccionado || modoReparto() === 'iguales'"
@@ -245,7 +244,7 @@ interface ParticipanteDraft {
                     </td>
                     <td>
                       @if (p.idUsuario === formIdPagador) {
-                        <span class="badge-status badge-success">PAGADO (Adelantó)</span>
+                        <span class="badge-status badge-success">PAGADO</span>
                       } @else {
                         <span class="badge-status badge-warning">PENDIENTE</span>
                       }
@@ -256,20 +255,20 @@ interface ParticipanteDraft {
             </table>
           </div>
 
-          <!-- Indicador en vivo de cuadre de distribución (RF12) -->
+          <!-- Indicador en vivo de cuadre de distribución -->
           <div
             style="padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-alt); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px;"
           >
             <div>
-              <span style="font-size: 11px; color: var(--muted);">SUMA DE DIVISIONES:</span>
+              <span style="font-size: 11px; color: var(--muted);">TOTAL DISTRIBUIDO:</span>
               <strong style="font-size: 15px; margin-left: 8px;">&#36;{{ sumaBorrador() | number:'1.0-0' }} / &#36;{{ formMontoTotal | number:'1.0-0' }} COP</strong>
             </div>
             <div>
               @if (Math.abs(sumaBorrador() - formMontoTotal) < 1) {
-                <span class="badge-status badge-success">DISTRIBUCIÓN COMPLETA (Diferencia $0)</span>
+                <span class="badge-status badge-success">COMPLETA</span>
               } @else if (sumaBorrador() < formMontoTotal) {
                 <span class="badge-status badge-warning">
-                  PENDIENTE ASIGNAR: &#36;{{ (formMontoTotal - sumaBorrador()) | number:'1.0-0' }} COP
+                  FALTAN: &#36;{{ (formMontoTotal - sumaBorrador()) | number:'1.0-0' }} COP
                 </span>
               } @else {
                 <span class="badge-status badge-danger">
@@ -282,7 +281,7 @@ interface ParticipanteDraft {
           <div style="display: flex; justify-content: flex-end; gap: 10px;">
             <button class="btn-outline" type="button" (click)="mostrarModalNuevaCuenta.set(false)">Cancelar</button>
             <button class="btn-primary" type="button" (click)="guardarCuentaYDivisiones()">
-              Guardar Cuenta y Divisiones en API
+              Guardar cuenta
             </button>
           </div>
         </div>
@@ -292,21 +291,20 @@ interface ParticipanteDraft {
     <!-- Modal: Agregar Participante a Cuenta Existente -->
     @if (cuentaParaNuevoParticipante(); as cuentaDest) {
       <div class="modal-backdrop" (click)="cuentaParaNuevoParticipante.set(null)">
-        <div class="modal-card" style="max-width: 460px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 440px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>Agregar participante a cuenta</h2>
-              <p class="sub">{{ cuentaDest.descripcion }} (Cuenta #00{{ cuentaDest.idCuenta }})</p>
+              <h2>Agregar participante</h2>
+              <p class="sub">{{ cuentaDest.descripcion }}</p>
             </div>
-            <span class="pill">POST /api/Division</span>
           </div>
 
           <form (ngSubmit)="guardarNuevoParticipanteCuenta()" style="display: grid; gap: 14px;">
             <div class="form-group">
-              <label>Usuario participante</label>
+              <label>Participante</label>
               <select class="form-control" [(ngModel)]="nuevoPartUsuarioId" name="idUsuario">
                 @for (u of api.usuarios(); track u.idUsuario) {
-                  <option [ngValue]="u.idUsuario">{{ u.nombre }} ({{ u.correo }})</option>
+                  <option [ngValue]="u.idUsuario">{{ u.nombre }}</option>
                 }
               </select>
             </div>
@@ -318,7 +316,7 @@ interface ParticipanteDraft {
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
               <button class="btn-outline" type="button" (click)="cuentaParaNuevoParticipante.set(null)">Cancelar</button>
-              <button class="btn-primary" type="submit">Agregar División</button>
+              <button class="btn-primary" type="submit">Agregar</button>
             </div>
           </form>
         </div>
@@ -464,7 +462,7 @@ export class UserCuentasComponent {
       .some(d => d.idCuenta === cuenta.idCuenta && d.idUsuario === Number(this.nuevoPartUsuarioId));
 
     if (yaExiste) {
-      this.toast.show('Este usuario ya tiene una división en esta cuenta (Restricción UQ_Division_Cuenta_Usuario).', 'warning');
+      this.toast.show('Este usuario ya participa en esta cuenta.', 'warning');
       return;
     }
 

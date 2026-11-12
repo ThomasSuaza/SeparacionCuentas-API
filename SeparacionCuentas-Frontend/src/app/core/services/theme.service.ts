@@ -13,9 +13,7 @@ export class ThemeService {
   readonly isDark = computed(() => this.currentTheme() === 'gold');
 
   readonly paletteLabel = computed(() =>
-    this.currentTheme() === 'indigo'
-      ? 'Modo Claro · Blanco Hielo + Índigo'
-      : 'Modo Oscuro · Azul Noche + Dorado'
+    this.currentTheme() === 'indigo' ? 'Modo Claro' : 'Modo Oscuro'
   );
 
   constructor(private toast: ToastService) {
@@ -34,7 +32,7 @@ export class ThemeService {
     return 'indigo';
   }
 
-  setTheme(palette: ThemePalette, notify = true): void {
+  setTheme(palette: ThemePalette, notify = false): void {
     this.currentTheme.set(palette);
     try {
       localStorage.setItem(this.STORAGE_KEY, palette);
@@ -44,52 +42,19 @@ export class ThemeService {
     this.applyThemeToDom(palette);
 
     if (notify) {
-      const label =
-        palette === 'indigo'
-          ? 'Paleta Blanco Hielo + Índigo (Modo Claro) activada.'
-          : 'Paleta Azul Noche + Dorado (Modo Oscuro) activada.';
+      const label = palette === 'indigo' ? 'Modo claro activado.' : 'Modo oscuro activado.';
       this.toast.show(label, 'info');
     }
   }
 
   toggleTheme(): void {
     const next: ThemePalette = this.currentTheme() === 'indigo' ? 'gold' : 'indigo';
-    this.setTheme(next, true);
+    this.setTheme(next, false);
   }
 
   private applyThemeToDom(palette: ThemePalette): void {
     if (typeof document === 'undefined') return;
     document.documentElement.setAttribute('data-theme', palette);
     document.documentElement.style.colorScheme = palette === 'indigo' ? 'light' : 'dark';
-  }
-
-  copyCurrentPaletteCss(): void {
-    if (typeof document === 'undefined') return;
-    const varNames = [
-      '--bg',
-      '--surface',
-      '--surface-alt',
-      '--sidebar',
-      '--border',
-      '--text',
-      '--muted',
-      '--accent',
-      '--accent-bright',
-      '--on-accent',
-      '--success'
-    ];
-    const computedStyle = getComputedStyle(document.documentElement);
-    const cssBlock =
-      `/* SplitBill AI (slit.ia) - Paleta ${this.currentTheme()} */\n:root {\n` +
-      varNames.map(name => `  ${name}: ${computedStyle.getPropertyValue(name).trim()};`).join('\n') +
-      `\n}`;
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(cssBlock).then(() => {
-        this.toast.show('Variables CSS de la paleta copiadas al portapapeles.', 'success');
-      });
-    } else {
-      this.toast.show('Variables CSS listas en styles.css.', 'info');
-    }
   }
 }

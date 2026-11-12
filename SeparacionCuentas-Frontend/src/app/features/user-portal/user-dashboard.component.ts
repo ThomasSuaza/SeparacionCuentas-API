@@ -12,52 +12,10 @@ import { Division, MetodoPago } from '../../core/models/api.models';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <!-- Barra de Paletas: Blanco Hielo + Índigo (Claro) y Azul Noche + Dorado (Oscuro) -->
-    <section class="palette-bar" aria-label="Elegir paleta visual">
-      <div>
-        <strong style="font-size: 13px; font-weight: 800;">Personaliza la apariencia de SplitBill AI (slit.ia)</strong>
-        <div style="font-size: 11.5px; color: var(--muted); margin-top: 2px;">
-          Alterna en tiempo real entre <b>Blanco Hielo + Índigo</b> (Modo Claro) y <b>Azul Noche + Dorado</b> (Modo Oscuro).
-        </div>
-      </div>
-
-      <div class="palette-choices-dual">
-        <button
-          class="palette-choice"
-          type="button"
-          [class.selected]="theme.currentTheme() === 'indigo'"
-          (click)="theme.setTheme('indigo')"
-        >
-          <span class="palette-swatch" style="background: linear-gradient(135deg, #F3F6FB 50%, #4F46E5 50%)"></span>
-          <span>
-            <strong style="display: block; font-size: 11.5px;">Blanco hielo + índigo</strong>
-            <small style="color: var(--muted); font-size: 10px;">Modo Claro Principal</small>
-          </span>
-        </button>
-
-        <button
-          class="palette-choice"
-          type="button"
-          [class.selected]="theme.currentTheme() === 'gold'"
-          (click)="theme.setTheme('gold')"
-        >
-          <span class="palette-swatch" style="background: linear-gradient(135deg, #111828 50%, #F0C674 50%)"></span>
-          <span>
-            <strong style="display: block; font-size: 11.5px;">Azul noche + dorado</strong>
-            <small style="color: var(--muted); font-size: 10px;">Modo Oscuro Ejecutivo</small>
-          </span>
-        </button>
-
-        <button class="btn-outline btn-sm" type="button" (click)="theme.copyCurrentPaletteCss()">
-          Copiar CSS
-        </button>
-      </div>
-    </section>
-
     <!-- Cabecera del Panel de Usuario -->
     <div class="heading-row">
       <div>
-        <div class="eyebrow">APARTADO DE USUARIO · {{ auth.currentUser().nombre }}</div>
+        <div class="eyebrow">HOLA, {{ auth.currentUser().nombre }}</div>
         <h1 class="page-title">Divide cuentas sin enredos.</h1>
         <p class="intro">
           Crea una cuenta, agrega participantes y lleva el control en vivo de quién ha pagado y cuánto te deben.
@@ -126,22 +84,24 @@ import { Division, MetodoPago } from '../../core/models/api.models';
     </div>
 
     <!-- Selector rápido de cuenta activa -->
-    <div style="display: flex; align-items: center; gap: 10px; overflow-x: auto; padding-bottom: 14px;">
-      <span style="font-size: 11.5px; font-weight: 800; color: var(--muted); white-space: nowrap;">CUENTA EN VISTA:</span>
-      @for (c of api.cuentas(); track c.idCuenta) {
-        <button
-          type="button"
-          class="btn-outline btn-sm"
-          [style.border-color]="selectedCuentaId() === c.idCuenta ? 'var(--accent)' : 'var(--border)'"
-          [style.background]="selectedCuentaId() === c.idCuenta ? 'var(--accent-soft)' : 'var(--surface)'"
-          (click)="selectedCuentaId.set(c.idCuenta)"
-        >
-          #00{{ c.idCuenta }} · {{ c.descripcion }} (&#36;{{ c.montoTotal | number:'1.0-0' }})
-        </button>
-      }
-    </div>
+    @if (api.cuentas().length > 0) {
+      <div style="display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 14px;">
+        <span style="font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap;">CUENTA ACTIVA:</span>
+        @for (c of api.cuentas(); track c.idCuenta) {
+          <button
+            type="button"
+            class="btn-outline btn-sm"
+            [style.border-color]="cuentaActiva()?.idCuenta === c.idCuenta ? 'var(--accent)' : 'var(--border)'"
+            [style.background]="cuentaActiva()?.idCuenta === c.idCuenta ? 'var(--accent-soft)' : 'var(--surface)'"
+            (click)="selectedCuentaId.set(c.idCuenta)"
+          >
+            {{ c.descripcion }} (&#36;{{ c.montoTotal | number:'1.0-0' }})
+          </button>
+        }
+      </div>
+    }
 
-    <!-- Vista Principal de Cuenta Seleccionada (Idéntica al diseño SLIT.IA y conectada a los modelos .NET) -->
+    <!-- Vista Principal de Cuenta Seleccionada -->
     @if (cuentaActiva(); as cuenta) {
       <div class="content-grid">
         <!-- Panel Izquierdo: Detalle de la cuenta y consumos -->
@@ -150,8 +110,8 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             <div>
               <h2>{{ cuenta.descripcion }}</h2>
               <p class="sub">
-                Cuenta #00{{ cuenta.idCuenta }} · {{ cuenta.fecha | date:'dd MMM yyyy, h:mm a' }}
-                · Pagador inicial: <b>{{ api.getNombreUsuario(cuenta.idUsuarioPagador) }}</b>
+                {{ cuenta.fecha | date:'dd MMM yyyy, h:mm a' }}
+                · Pagado por: <b>{{ api.getNombreUsuario(cuenta.idUsuarioPagador) }}</b>
               </p>
             </div>
             <span class="pill">
@@ -177,7 +137,7 @@ import { Division, MetodoPago } from '../../core/models/api.models';
           </div>
 
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 750; margin: 10px 0 12px;">
-            <span>Detalle de consumos registrados</span>
+            <span>Detalle de consumos</span>
             <span style="color: var(--muted);">{{ consumosCuentaActiva().length }} conceptos</span>
           </div>
 
@@ -194,7 +154,7 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             </div>
           } @empty {
             <div style="padding: 16px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--muted); font-size: 12px;">
-              Esta cuenta fue creada por valor global (&#36;{{ cuenta.montoTotal | number:'1.0-0' }} COP). Puedes agregar ítems de consumo abajo.
+              Cuenta registrada por valor total (&#36;{{ cuenta.montoTotal | number:'1.0-0' }} COP). Puedes detallar consumos abajo si lo deseas.
             </div>
           }
 
@@ -205,7 +165,7 @@ import { Division, MetodoPago } from '../../core/models/api.models';
               style="flex: 2; min-width: 140px; padding: 8px 11px; font-size: 12px;"
               type="text"
               [(ngModel)]="nuevoConcepto"
-              placeholder="Agregar consumo (ej. Postres)"
+              placeholder="Concepto (ej. Postres)"
             />
             <input
               class="form-control"
@@ -216,13 +176,13 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             />
             <input
               class="form-control"
-              style="width: 110px; padding: 8px 11px; font-size: 12px;"
+              style="width: 115px; padding: 8px 11px; font-size: 12px;"
               type="number"
               [(ngModel)]="nuevoValorItem"
               placeholder="Valor COP"
             />
             <button class="btn-outline btn-sm" type="button" (click)="agregarItemConsumo(cuenta.idCuenta)">
-              + Ítem
+              + Agregar
             </button>
           </div>
         </section>
@@ -233,7 +193,7 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             <div>
               <h2>División de la cuenta</h2>
               <p class="sub">
-                Participantes y estado en <code>dbo.Division</code> · Pagador recibe:
+                Pendiente por recibir el pagador:
                 <b>&#36;{{ saldoPagadorCuentaActiva() | number:'1.0-0' }} COP</b>
               </p>
             </div>
@@ -255,9 +215,9 @@ import { Division, MetodoPago } from '../../core/models/api.models';
                   </strong>
                   <small style="display: block; font-size: 10.5px; color: var(--muted);">
                     @if (div.idUsuario === cuenta.idUsuarioPagador) {
-                      Organizador / Pagador inicial
+                      Pagador inicial
                     } @else if (div.tipoPago) {
-                      Pagó vía {{ div.tipoPago }} ({{ div.referenciaPago || 'Sin ref' }})
+                      Pagó vía {{ div.tipoPago }} ({{ div.referenciaPago || 'Confirmado' }})
                     } @else {
                       Participante · Cuota asignada
                     }
@@ -284,7 +244,7 @@ import { Division, MetodoPago } from '../../core/models/api.models';
                     Pagar
                   </button>
                 } @else {
-                  <button class="btn-outline btn-sm" type="button" (click)="revertirAPendiente(div)" title="Cambiar a PENDIENTE">
+                  <button class="btn-outline btn-sm" type="button" (click)="revertirAPendiente(div)" title="Marcar como pendiente">
                     ↺
                   </button>
                 }
@@ -302,76 +262,64 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             <i class="progress-fill" [style.width.%]="progresoCuentaActiva().porcentaje"></i>
           </div>
 
-          <div style="display: flex; align-items: flex-start; gap: 10px; background: var(--accent-soft); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 18px;">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;">
-              <circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>
-            </svg>
-            <p style="font-size: 11px; line-height: 1.5; color: var(--muted); margin: 0;">
-              <b style="color: var(--text);">Cuenta clara, todos tranquilos.</b>
-              El endpoint <code>GET /api/Cuenta/{{ cuenta.idCuenta }}/devoluciones</code> calcula automáticamente cuánto recibe el pagador a medida que se registran pagos.
-            </p>
-          </div>
-
-          <div style="margin-top: 18px; display: flex; gap: 10px;">
+          <div style="margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap;">
             <a routerLink="/usuario/saldos" class="btn-outline" style="flex: 1;">
-              Ver Saldos y Devoluciones
+              Ver saldos detallados
             </a>
-            <a routerLink="/usuario/cuentas" class="btn-primary" style="flex: 1.4;">
-              Gestionar / Dividir Cuentas
+            <a routerLink="/usuario/cuentas" class="btn-primary" style="flex: 1;">
+              Gestionar cuentas
             </a>
           </div>
         </section>
       </div>
     }
 
-    <!-- Modal para Registrar Pago (PUT /api/Division/{id}) -->
+    <!-- Modal para Registrar Pago -->
     @if (divisionEnPago(); as divModal) {
       <div class="modal-backdrop" (click)="divisionEnPago.set(null)">
-        <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 460px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
               <h2>Registrar pago de cuota</h2>
               <p class="sub">
-                Participante: <b>{{ api.getNombreUsuario(divModal.idUsuario) }}</b> · Cuenta #00{{ divModal.idCuenta }}
+                Participante: <b>{{ api.getNombreUsuario(divModal.idUsuario) }}</b>
               </p>
             </div>
-            <span class="pill">RF08 / RF09</span>
           </div>
 
           <div class="account-banner" style="margin: 12px 0 18px; padding: 16px;">
             <div class="overline">Valor a pagar</div>
             <div class="amount" style="font-size: 26px;">&#36;{{ divModal.monto | number:'1.0-0' }} COP</div>
-            <div class="caption">Se actualizará a estado PAGADO en dbo.Division</div>
           </div>
 
           <form (ngSubmit)="confirmarPagoDivision()" style="display: grid; gap: 14px;">
             <div class="form-group">
-              <label>Método de pago utilizado (<code>tipo_pago</code>)</label>
+              <label>Método de pago</label>
               <select class="form-control" [(ngModel)]="metodoPagoSeleccionado" name="metodoPago">
                 <option value="Nequi">Nequi</option>
-                <option value="Bancolombia">Transferencia Bancolombia / A la Mano</option>
+                <option value="Bancolombia">Transferencia Bancolombia</option>
                 <option value="DaviPlata">DaviPlata</option>
                 <option value="PSE">PSE / Transfiya</option>
                 <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta">Tarjeta Crédito / Débito</option>
+                <option value="Tarjeta">Tarjeta</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>Referencia o comprobante de pago (<code>referencia_pago</code>)</label>
+              <label>Referencia o comprobante</label>
               <input
                 class="form-control"
                 type="text"
                 [(ngModel)]="referenciaPagoInput"
                 name="referenciaPago"
-                placeholder="Ej. NEQ-849201 o Comprobante #1234"
+                placeholder="Ej. NEQ-849201"
                 required
               />
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
               <button class="btn-outline" type="button" (click)="divisionEnPago.set(null)">Cancelar</button>
-              <button class="btn-primary" type="submit">Confirmar Pago (PUT /api/Division)</button>
+              <button class="btn-primary" type="submit">Confirmar pago</button>
             </div>
           </form>
         </div>

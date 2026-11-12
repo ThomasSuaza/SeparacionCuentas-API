@@ -13,39 +13,39 @@ import { Division, MetodoPago } from '../../core/models/api.models';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">MIS DIVISIONES Y COMPROBANTES (GET /api/Division/usuario/{{ auth.currentUser().idUsuario }})</div>
+        <div class="eyebrow">MIS PAGOS</div>
         <h1 class="page-title">Mis Pagos y Movimientos</h1>
         <p class="intro">
-          Consulta todas tus cuotas asignadas como participante, registra el pago con método y referencia, o copia recordatorios de cobro.
+          Consulta todas tus cuotas asignadas, registra tus pagos o copia tus comprobantes.
         </p>
       </div>
     </div>
 
     <div class="stat-grid cols-3">
       <div class="stat-card">
-        <div class="tiny">Cuotas Pendientes por Pagar</div>
+        <div class="tiny">Cuotas Pendientes</div>
         <strong style="color: var(--warning);">&#36;{{ totalPendiente() | number:'1.0-0' }} COP</strong>
-        <small>{{ divisionesPendientes().length }} divisiones en estado PENDIENTE</small>
+        <small>{{ divisionesPendientes().length }} cuotas por pagar</small>
       </div>
 
       <div class="stat-card">
-        <div class="tiny">Total Pagado por {{ auth.currentUser().nombre }}</div>
+        <div class="tiny">Total Pagado</div>
         <strong style="color: var(--success);">&#36;{{ totalPagado() | number:'1.0-0' }} COP</strong>
-        <small>{{ divisionesPagadas().length }} divisiones en estado PAGADO</small>
+        <small>{{ divisionesPagadas().length }} pagos realizados</small>
       </div>
 
       <div class="stat-card">
-        <div class="tiny">Total Participaciones</div>
+        <div class="tiny">Participaciones</div>
         <strong>{{ misDivisiones().length }}</strong>
-        <small>Registradas en <code>dbo.Division</code></small>
+        <small>En cuentas compartidas</small>
       </div>
     </div>
 
     <section class="panel">
       <div class="panel-head">
         <div>
-          <h2>Detalle de mis divisiones por cuenta</h2>
-          <p class="sub">Conectado a <code>GET /api/Division/usuario/{{ auth.currentUser().idUsuario }}</code> y <code>PUT /api/Division/{{ '{' }}id{{ '}' }}</code>.</p>
+          <h2>Detalle de mis cuotas</h2>
+          <p class="sub">Historial de participaciones de {{ auth.currentUser().nombre }}.</p>
         </div>
         <span class="pill">{{ misDivisiones().length }} registros</span>
       </div>
@@ -54,13 +54,12 @@ import { Division, MetodoPago } from '../../core/models/api.models';
         <table class="data-table">
           <thead>
             <tr>
-              <th>ID División</th>
-              <th>Cuenta Asociada</th>
-              <th>Pagador de la Cuenta</th>
-              <th>Monto Asignado</th>
+              <th>Cuenta</th>
+              <th>Pagador inicial</th>
+              <th>Mi cuota</th>
               <th>Estado</th>
               <th>Método / Referencia</th>
-              <th>Fecha de Pago</th>
+              <th>Fecha de pago</th>
               <th>Acción</th>
             </tr>
           </thead>
@@ -68,10 +67,9 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             @for (d of misDivisiones(); track d.idDivision) {
               @let cuenta = obtenerCuenta(d.idCuenta);
               <tr>
-                <td><b>#{{ d.idDivision }}</b></td>
                 <td>
                   <strong>{{ cuenta?.descripcion || ('Cuenta #' + d.idCuenta) }}</strong>
-                  <div style="font-size: 11px; color: var(--muted);">Total cuenta: &#36;{{ (cuenta?.montoTotal || 0) | number:'1.0-0' }} COP</div>
+                  <div style="font-size: 11px; color: var(--muted);">Total: &#36;{{ (cuenta?.montoTotal || 0) | number:'1.0-0' }} COP</div>
                 </td>
                 <td>
                   {{ cuenta ? api.getNombreUsuario(cuenta.idUsuarioPagador) : '—' }}
@@ -113,8 +111,8 @@ import { Division, MetodoPago } from '../../core/models/api.models';
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" style="text-align: center; padding: 26px; color: var(--muted);">
-                  No tienes divisiones registradas actualmente para este usuario.
+                <td colspan="7" style="text-align: center; padding: 26px; color: var(--muted);">
+                  No tienes cuotas registradas actualmente.
                 </td>
               </tr>
             }
@@ -125,18 +123,17 @@ import { Division, MetodoPago } from '../../core/models/api.models';
 
     @if (divisionActiva(); as div) {
       <div class="modal-backdrop" (click)="divisionActiva.set(null)">
-        <div class="modal-card" style="max-width: 460px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 440px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>Registrar Pago de División #{{ div.idDivision }}</h2>
-              <p class="sub">Monto: <b>&#36;{{ div.monto | number:'1.0-0' }} COP</b></p>
+              <h2>Registrar pago</h2>
+              <p class="sub">Valor: <b>&#36;{{ div.monto | number:'1.0-0' }} COP</b></p>
             </div>
-            <span class="pill">PUT /api/Division/{{ div.idDivision }}</span>
           </div>
 
           <form (ngSubmit)="guardarPago()" style="display: grid; gap: 14px;">
             <div class="form-group">
-              <label>Método de pago (<code>tipo_pago</code>)</label>
+              <label>Método de pago</label>
               <select class="form-control" [(ngModel)]="metodoPago" name="metodo">
                 <option value="Nequi">Nequi</option>
                 <option value="Bancolombia">Bancolombia</option>
@@ -147,12 +144,12 @@ import { Division, MetodoPago } from '../../core/models/api.models';
               </select>
             </div>
             <div class="form-group">
-              <label>Referencia del comprobante (<code>referencia_pago</code>)</label>
+              <label>Referencia del comprobante</label>
               <input class="form-control" type="text" [(ngModel)]="referenciaPago" name="ref" required />
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
               <button class="btn-outline" type="button" (click)="divisionActiva.set(null)">Cancelar</button>
-              <button class="btn-primary" type="submit">Marcar como PAGADO</button>
+              <button class="btn-primary" type="submit">Confirmar pago</button>
             </div>
           </form>
         </div>
@@ -216,10 +213,10 @@ export class UserPagosComponent {
 
   copiarComprobante(d: Division): void {
     const c = this.obtenerCuenta(d.idCuenta);
-    const texto = `✅ Comprobante SplitBill AI (slit.ia)\nCuenta: ${c?.descripcion || d.idCuenta}\nParticipante: ${this.auth.currentUser().nombre}\nValor Pagado: $${d.monto.toLocaleString('es-CO')} COP\nMétodo: ${d.tipoPago || 'Digital'} (${d.referenciaPago || 'N/A'})`;
+    const texto = `✅ Comprobante SplitBill AI\nCuenta: ${c?.descripcion || d.idCuenta}\nParticipante: ${this.auth.currentUser().nombre}\nValor Pagado: $${d.monto.toLocaleString('es-CO')} COP\nMétodo: ${d.tipoPago || 'Digital'} (${d.referenciaPago || 'N/A'})`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(texto);
     }
-    this.toast.show('Resumen de comprobante copiado al portapapeles.', 'success');
+    this.toast.show('Comprobante copiado al portapapeles.', 'success');
   }
 }

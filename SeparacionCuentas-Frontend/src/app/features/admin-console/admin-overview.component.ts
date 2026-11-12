@@ -10,18 +10,18 @@ import { SeparacionCuentasService } from '../../core/services/separacion-cuentas
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">CONSOLA DE ADMINISTRADOR · SPLITBILL AI (.NET 10 + SQL SERVER)</div>
-        <h1 class="page-title">Centro de Control y Auditoría Financiera</h1>
+        <div class="eyebrow">ADMINISTRACIÓN</div>
+        <h1 class="page-title">Panel de Control General</h1>
         <p class="intro">
-          Supervisión integral de todos los usuarios, cuentas, divisiones, estados de distribución y diagnóstico en vivo de la base de datos <code>SeparacionCuentas</code>.
+          Resumen ejecutivo de usuarios, cuentas compartidas, pagos recaudados y saldos pendientes.
         </p>
       </div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <button class="btn-outline" type="button" (click)="api.refreshAllData()">
-          🔄 Sincronizar con API .NET
+          🔄 Actualizar datos
         </button>
         <a routerLink="/admin/sistema" class="btn-primary">
-          Diagnóstico /dbtest
+          Estado del servidor
         </a>
       </div>
     </div>
@@ -39,7 +39,7 @@ import { SeparacionCuentasService } from '../../core/services/separacion-cuentas
 
       <div class="stat-card">
         <div class="tiny">
-          Recaudado en Divisiones (PAGADO)
+          Total Recaudado
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
         </div>
         <strong style="color: var(--success);">&#36;{{ api.totalPagadoDivisiones() | number:'1.0-0' }}</strong>
@@ -48,50 +48,48 @@ import { SeparacionCuentasService } from '../../core/services/separacion-cuentas
 
       <div class="stat-card">
         <div class="tiny">
-          Cartera en Tránsito (PENDIENTE)
+          Pendiente por Cobrar
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
         </div>
         <strong style="color: var(--warning);">&#36;{{ api.totalPendienteDivisiones() | number:'1.0-0' }}</strong>
-        <small>COP · Cuotas pendientes de pago</small>
+        <small>COP · Cuotas pendientes</small>
       </div>
 
       <div class="stat-card">
         <div class="tiny">
-          Base de Usuarios & Divisiones
+          Usuarios & Divisiones
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/></svg>
         </div>
         <strong>{{ api.usuarios().length }} / {{ api.divisiones().length }}</strong>
-        <small>Usuarios activos / Divisiones totales</small>
+        <small>Usuarios registrados / Divisiones</small>
       </div>
     </div>
 
     <div class="content-grid">
-      <!-- Auditoría de Estado de Distribución por Cuenta -->
+      <!-- Estado de Distribución por Cuenta -->
       <section class="panel">
         <div class="panel-head">
           <div>
-            <h2>Auditoría de Distribución de Cuentas (<code>GET /api/Cuenta/{{ '{' }}id{{ '}' }}/devoluciones</code>)</h2>
-            <p class="sub">Detecta cuentas con distribución <code>COMPLETA</code>, <code>PENDIENTE</code> o <code>EXCEDIDA</code>.</p>
+            <h2>Estado de cuentas registradas</h2>
+            <p class="sub">Seguimiento del balance y distribución de cada cuenta.</p>
           </div>
-          <a routerLink="/admin/cuentas" class="pill">Gestionar Cuentas →</a>
+          <a routerLink="/admin/cuentas" class="pill">Ver todas →</a>
         </div>
 
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Descripción</th>
+                <th>Cuenta</th>
                 <th>Pagador</th>
                 <th>Monto Total</th>
                 <th>Total Dividido</th>
-                <th>Estado Distribución</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
               @for (item of auditoriaCuentas(); track item.cuenta.idCuenta) {
                 <tr>
-                  <td><b>#00{{ item.cuenta.idCuenta }}</b></td>
                   <td><strong>{{ item.cuenta.descripcion }}</strong></td>
                   <td>{{ api.getNombreUsuario(item.cuenta.idUsuarioPagador) }}</td>
                   <td>&#36;{{ item.cuenta.montoTotal | number:'1.0-0' }}</td>
@@ -113,14 +111,13 @@ import { SeparacionCuentasService } from '../../core/services/separacion-cuentas
         </div>
       </section>
 
-      <!-- Distribución por Método de Pago y Bitácora de Operaciones -->
+      <!-- Distribución por Método de Pago y Actividad Reciente -->
       <section class="panel">
         <div class="panel-head">
           <div>
-            <h2>Uso de Métodos de Pago (<code>tipo_pago</code>)</h2>
-            <p class="sub">Participación por canal en divisiones pagadas.</p>
+            <h2>Métodos de pago utilizados</h2>
+            <p class="sub">Participación por medio de pago en cuotas completadas.</p>
           </div>
-          <span class="pill">Analítica</span>
         </div>
 
         <div style="display: grid; gap: 12px; margin-bottom: 22px;">
@@ -139,8 +136,8 @@ import { SeparacionCuentasService } from '../../core/services/separacion-cuentas
 
         <div class="panel-head" style="margin-top: 18px;">
           <div>
-            <h2>Bitácora reciente de transacciones API</h2>
-            <p class="sub">Últimas llamadas registradas por la consola.</p>
+            <h2>Actividad reciente</h2>
+            <p class="sub">Últimos movimientos registrados en la plataforma.</p>
           </div>
         </div>
 
@@ -148,14 +145,13 @@ import { SeparacionCuentasService } from '../../core/services/separacion-cuentas
           @for (log of api.auditLogs().slice(0, 6); track log.id) {
             <div style="padding: 9px 12px; border-radius: 10px; background: var(--surface-alt); border: 1px solid var(--border); font-size: 11.5px; display: flex; justify-content: space-between; gap: 8px;">
               <div>
-                <span class="badge-status badge-info" style="margin-right: 6px;">{{ log.metodo }}</span>
-                <b>{{ log.endpoint }}</b> · {{ log.descripcion }}
+                <span class="badge-status badge-info" style="margin-right: 6px;">{{ log.modulo }}</span>
+                <span>{{ log.descripcion }}</span>
               </div>
-              <small style="color: var(--muted); white-space: nowrap;">{{ log.origen }}</small>
             </div>
           } @empty {
             <div style="font-size: 12px; color: var(--muted);">
-              Realiza cualquier acción (crear, editar, pagar o diagnosticar) para ver el registro en vivo.
+              No hay actividad reciente registrada en esta sesión.
             </div>
           }
         </div>

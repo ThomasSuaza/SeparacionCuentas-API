@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -11,37 +11,31 @@ import { ThemeService } from '../../core/services/theme.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div style="display: grid; gap: 28px; padding-top: 10px;">
+    <div style="display: grid; gap: 24px; padding-top: 10px;">
       <!-- Hero Principal -->
-      <section class="panel" style="padding: 34px; position: relative; overflow: hidden;">
-        <div style="max-width: 780px; position: relative; z-index: 1;">
-          <div class="eyebrow">SPLITBILL AI · SLIT.IA · PLATAFORMA WEB OFICIAL</div>
-          <h1 class="page-title" style="font-size: clamp(28px, 3.4vw, 42px); margin-bottom: 12px;">
+      <section class="panel" style="padding: clamp(22px, 4vw, 34px); position: relative; overflow: hidden;">
+        <div style="max-width: 740px; position: relative; z-index: 1;">
+          <div class="eyebrow">SPLITBILL AI · SLIT.IA</div>
+          <h1 class="page-title" style="font-size: clamp(26px, 3.4vw, 40px); margin-bottom: 12px;">
             Divide cuentas grupales sin discusiones ni cálculos manuales.
           </h1>
-          <p class="intro" style="font-size: 14.5px; max-width: 640px; margin-bottom: 24px;">
-            Conectado directamente a <b>SeparacionCuentas-API (.NET 10 + Dapper + SQL Server)</b>.
-            Gestiona cuentas compartidas, calcula saldos exactos (<code>RECIBE</code>, <code>PAGA</code>, <code>SALDADO</code>)
-            y audita estados de distribución (<code>COMPLETA</code>, <code>PENDIENTE</code>, <code>EXCEDIDA</code>) desde el
-            <b>Apartado de Usuario</b> o la <b>Consola de Administrador</b>.
+          <p class="intro" style="font-size: 14px; max-width: 620px; margin-bottom: 22px;">
+            Registra gastos compartidos, asigna cuotas de forma equitativa o personalizada y lleva el control en tiempo real de los pagos y saldos de cada participante.
           </p>
 
-          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
             <button class="btn-primary" type="button" (click)="enterPortal('user')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
               </svg>
-              Entrar al Apartado de Usuario
+              Ir al Portal de Usuario
             </button>
             <button class="btn-outline" type="button" (click)="enterPortal('admin')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
                 <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
               </svg>
-              Abrir Consola de Administrador
-            </button>
-            <button class="btn-outline" type="button" (click)="theme.toggleTheme()">
-              Cambiar a {{ theme.isDark() ? 'Modo Claro (Blanco + Índigo)' : 'Modo Oscuro (Azul Noche + Dorado)' }}
+              Consola de Administrador
             </button>
           </div>
         </div>
@@ -53,12 +47,12 @@ import { ThemeService } from '../../core/services/theme.service';
           <div class="panel-head">
             <div>
               <h2>Selecciona tu perfil activo</h2>
-              <p class="sub">Haz clic en cualquier integrante registrado en <code>dbo.Usuario</code> para explorar su vista personalizada.</p>
+              <p class="sub">Elige un participante para consultar sus cuentas, pagos y saldos.</p>
             </div>
             <span class="pill">{{ api.usuarios().length }} usuarios</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
             @for (u of api.usuarios(); track u.idUsuario) {
               <div
                 style="border: 1px solid var(--border); background: var(--surface-alt); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: all 0.15s ease;"
@@ -73,7 +67,7 @@ import { ThemeService } from '../../core/services/theme.service';
                   </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid var(--border); font-size: 11px;">
-                  <span style="color: var(--muted);">ID #{{ u.idUsuario }} · {{ u.telefono || 'Sin teléfono' }}</span>
+                  <span style="color: var(--muted);">{{ u.telefono || 'Sin teléfono' }}</span>
                   @if (auth.currentUser().idUsuario === u.idUsuario) {
                     <span class="badge-status badge-success">Activo</span>
                   } @else {
@@ -85,14 +79,13 @@ import { ThemeService } from '../../core/services/theme.service';
           </div>
         </section>
 
-        <!-- Registro Rápido de Nuevo Usuario (POST /api/Usuario) -->
+        <!-- Registro Rápido de Nuevo Usuario -->
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>Crear nueva cuenta de usuario</h2>
-              <p class="sub">Registra un participante directamente en <code>POST /api/Usuario</code>.</p>
+              <h2>Crear cuenta de usuario</h2>
+              <p class="sub">Registra un nuevo participante en la plataforma.</p>
             </div>
-            <span class="pill">RF01</span>
           </div>
 
           <form (ngSubmit)="registrarUsuario()" style="display: grid; gap: 13px;">
@@ -101,12 +94,12 @@ import { ThemeService } from '../../core/services/theme.service';
               <input class="form-control" type="text" [(ngModel)]="nuevoNombre" name="nombre" placeholder="Ej. Laura Camila Ríos" required />
             </div>
             <div class="form-group">
-              <label>Correo electrónico (Único en SQL Server)</label>
-              <input class="form-control" type="email" [(ngModel)]="nuevoCorreo" name="correo" placeholder="laura.rios@splitbill.ai" required />
+              <label>Correo electrónico</label>
+              <input class="form-control" type="email" [(ngModel)]="nuevoCorreo" name="correo" placeholder="laura.rios@correo.com" required />
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label>Teléfono / Celular (Nequi)</label>
+                <label>Teléfono / Celular</label>
                 <input class="form-control" type="text" [(ngModel)]="nuevoTelefono" name="telefono" placeholder="+57 310 000 0000" />
               </div>
               <div class="form-group">
@@ -115,7 +108,7 @@ import { ThemeService } from '../../core/services/theme.service';
               </div>
             </div>
             <button class="btn-primary" type="submit" style="margin-top: 6px; width: 100%;">
-              Registrar e Ingresar al Portal
+              Registrar e Ingresar
             </button>
           </form>
         </section>

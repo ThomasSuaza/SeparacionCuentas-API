@@ -11,14 +11,14 @@ import { Cuenta, ResumenDevolucionCuentaResponse } from '../../core/models/api.m
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">CONSOLA DE ADMINISTRADOR · MÓDULO CUENTAS (/api/Cuenta)</div>
-        <h1 class="page-title">Administración de Cuentas y Devoluciones</h1>
+        <div class="eyebrow">ADMINISTRACIÓN</div>
+        <h1 class="page-title">Gestión de Cuentas</h1>
         <p class="intro">
-          Control total sobre <code>dbo.Cuenta</code>: creación, edición de montos y pagadores, eliminación en cascada e inspección del DTO <code>ResumenDevolucionCuentaResponse</code>.
+          Administra las cuentas registradas, sus pagadores, montos y saldos de distribución.
         </p>
       </div>
       <button class="btn-primary" type="button" (click)="abrirCrearCuenta()">
-        + Nueva Cuenta (POST /api/Cuenta)
+        + Nueva cuenta
       </button>
     </div>
 
@@ -27,13 +27,12 @@ import { Cuenta, ResumenDevolucionCuentaResponse } from '../../core/models/api.m
         <table class="data-table">
           <thead>
             <tr>
-              <th>ID Cuenta</th>
               <th>Descripción</th>
-              <th>Usuario Pagador (FK)</th>
+              <th>Pagador</th>
               <th>Monto Total</th>
-              <th>Suma Divisiones</th>
+              <th>Total Dividido</th>
               <th>Diferencia</th>
-              <th>Estado Distribución</th>
+              <th>Estado</th>
               <th>Fecha</th>
               <th>Acciones</th>
             </tr>
@@ -42,12 +41,8 @@ import { Cuenta, ResumenDevolucionCuentaResponse } from '../../core/models/api.m
             @for (c of api.cuentas(); track c.idCuenta) {
               @let dev = api.calcularDevolucionesLocal(c.idCuenta);
               <tr>
-                <td><b>#00{{ c.idCuenta }}</b></td>
                 <td><strong>{{ c.descripcion }}</strong></td>
-                <td>
-                  {{ api.getNombreUsuario(c.idUsuarioPagador) }}
-                  <small style="color: var(--muted); display: block;">ID #{{ c.idUsuarioPagador }}</small>
-                </td>
+                <td>{{ api.getNombreUsuario(c.idUsuarioPagador) }}</td>
                 <td><strong>&#36;{{ c.montoTotal | number:'1.0-0' }} COP</strong></td>
                 <td>&#36;{{ dev.totalDivisiones | number:'1.0-0' }} COP</td>
                 <td>&#36;{{ dev.diferencia | number:'1.0-0' }} COP</td>
@@ -65,7 +60,7 @@ import { Cuenta, ResumenDevolucionCuentaResponse } from '../../core/models/api.m
                 <td>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn-outline btn-sm" type="button" (click)="inspeccionarDevolucion(c.idCuenta)">
-                      JSON Devoluciones
+                      Ver saldos
                     </button>
                     <button class="btn-outline btn-sm" type="button" (click)="abrirEditarCuenta(c)">
                       Editar
@@ -85,63 +80,93 @@ import { Cuenta, ResumenDevolucionCuentaResponse } from '../../core/models/api.m
     <!-- Modal Crear / Editar Cuenta -->
     @if (mostrarModal()) {
       <div class="modal-backdrop" (click)="mostrarModal.set(false)">
-        <div class="modal-card" style="max-width: 500px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>{{ editandoId() ? 'Editar Cuenta #00' + editandoId() : 'Registrar Cuenta (POST /api/Cuenta)' }}</h2>
-              <p class="sub">Entidad <code>ApiCQRS.Models.Cuenta</code></p>
+              <h2>{{ editandoId() ? 'Editar cuenta' : 'Registrar cuenta' }}</h2>
+              <p class="sub">Completa la información de la cuenta compartida.</p>
             </div>
-            <span class="pill">dbo.Cuenta</span>
           </div>
 
           <form (ngSubmit)="guardarCuenta()" style="display: grid; gap: 14px;">
             <div class="form-group">
-              <label>Descripción (<code>descripcion</code>)</label>
+              <label>Descripción</label>
               <input class="form-control" type="text" [(ngModel)]="formDescripcion" name="descripcion" required />
             </div>
 
             <div class="form-group">
-              <label>Usuario Pagador (<code>id_usuario_pagador</code>)</label>
+              <label>Pagado inicialmente por</label>
               <select class="form-control" [(ngModel)]="formIdUsuarioPagador" name="idUsuarioPagador">
                 @for (u of api.usuarios(); track u.idUsuario) {
-                  <option [ngValue]="u.idUsuario">{{ u.nombre }} (ID #{{ u.idUsuario }})</option>
+                  <option [ngValue]="u.idUsuario">{{ u.nombre }}</option>
                 }
               </select>
             </div>
 
             <div class="form-group">
-              <label>Monto Total (<code>monto_total &gt; 0</code>)</label>
+              <label>Monto Total (COP)</label>
               <input class="form-control" type="number" [(ngModel)]="formMontoTotal" name="montoTotal" min="1" required />
             </div>
 
             <div class="form-group">
-              <label>Fecha (<code>fecha</code>)</label>
+              <label>Fecha</label>
               <input class="form-control" type="datetime-local" [(ngModel)]="formFecha" name="fecha" required />
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
               <button class="btn-outline" type="button" (click)="mostrarModal.set(false)">Cancelar</button>
-              <button class="btn-primary" type="submit">Guardar en API</button>
+              <button class="btn-primary" type="submit">Guardar</button>
             </div>
           </form>
         </div>
       </div>
     }
 
-    <!-- Modal Inspector JSON de GET /api/Cuenta/{idCuenta}/devoluciones -->
+    <!-- Modal Resumen de Saldos de la Cuenta -->
     @if (jsonInspeccionado(); as dto) {
       <div class="modal-backdrop" (click)="jsonInspeccionado.set(null)">
-        <div class="modal-card" style="max-width: 680px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 640px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>Respuesta de <code>GET /api/Cuenta/{{ dto.idCuenta }}/devoluciones</code></h2>
-              <p class="sub">DTO <code>ResumenDevolucionCuentaResponse</code></p>
+              <h2>Balance y saldos de la cuenta</h2>
+              <p class="sub">Estado: <b>{{ dto.estadoDistribucion }}</b> · Total: &#36;{{ dto.montoTotalCuenta | number:'1.0-0' }} COP</p>
             </div>
             <button class="btn-outline btn-sm" type="button" (click)="jsonInspeccionado.set(null)">Cerrar</button>
           </div>
-          <pre
-            style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: 12px; padding: 16px; font-size: 12px; overflow-x: auto; max-height: 440px;"
-          >{{ dto | json }}</pre>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Participante</th>
+                  <th>Cuota</th>
+                  <th>Adelantado</th>
+                  <th>Saldo</th>
+                  <th>Movimiento</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of dto.saldos; track s.idUsuario) {
+                  <tr>
+                    <td><strong>{{ s.nombre }}</strong></td>
+                    <td>&#36;{{ s.montoAsignado | number:'1.0-0' }}</td>
+                    <td>&#36;{{ s.montoAdelantado | number:'1.0-0' }}</td>
+                    <td><strong>&#36;{{ s.saldo | number:'1.0-0' }}</strong></td>
+                    <td>
+                      <span
+                        class="badge-status"
+                        [class.badge-info]="s.tipoMovimiento === 'RECIBE'"
+                        [class.badge-warning]="s.tipoMovimiento === 'PAGA'"
+                        [class.badge-success]="s.tipoMovimiento === 'SALDADO'"
+                      >
+                        {{ s.tipoMovimiento }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     }

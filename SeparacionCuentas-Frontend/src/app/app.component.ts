@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -14,17 +14,26 @@ import { ToastService } from './core/services/toast.service';
   template: `
     <div class="app-theme" [attr.data-theme]="theme.currentTheme()">
       <div class="shell">
-        <!-- SIDEBAR DE NAVEGACIÓN (APARTADO DE USUARIO + CONSOLA DE ADMINISTRADOR) -->
-        <aside class="app-sidebar">
-          <a routerLink="/bienvenida" class="brand">
-            <div class="mark">S</div>
-            <div class="brand-name">
-              slit<span style="color: var(--accent)">.</span>ia
-              <small>SPLITBILL AI · .NET 10</small>
-            </div>
-          </a>
+        @if (mobileMenuOpen()) {
+          <div class="sidebar-backdrop" (click)="mobileMenuOpen.set(false)"></div>
+        }
 
-          <!-- Conmutador de Rol: Apartado de Usuario vs Consola de Administrador -->
+        <!-- SIDEBAR DE NAVEGACIÓN -->
+        <aside class="app-sidebar" [class.open]="mobileMenuOpen()">
+          <div class="brand">
+            <a routerLink="/bienvenida" style="display: flex; align-items: center; gap: 11px;" (click)="closeMobileMenu()">
+              <div class="mark">S</div>
+              <div class="brand-name">
+                slit<span style="color: var(--accent)">.</span>ia
+                <small>SPLITBILL AI</small>
+              </div>
+            </a>
+            <button type="button" class="sidebar-close-btn" (click)="closeMobileMenu()" aria-label="Cerrar menú">
+              ✕
+            </button>
+          </div>
+
+          <!-- Conmutador de Rol: Usuario vs Administrador -->
           <div class="role-switcher" aria-label="Cambiar entre Usuario y Administrador">
             <button
               type="button"
@@ -46,13 +55,13 @@ import { ToastService } from './core/services/toast.service';
 
           <!-- MENÚ APARTADO DE USUARIO -->
           <div>
-            <div class="nav-label">APARTADO DE USUARIO</div>
+            <div class="nav-label">PORTAL DE USUARIO</div>
             <div class="nav-group">
               <a
                 routerLink="/usuario/panel"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('user', true)"
+                (click)="navigateRole('user')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -67,7 +76,7 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/usuario/cuentas"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('user', true)"
+                (click)="navigateRole('user')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -82,7 +91,7 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/usuario/pagos"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('user', true)"
+                (click)="navigateRole('user')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -96,7 +105,7 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/usuario/saldos"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('user', true)"
+                (click)="navigateRole('user')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -110,13 +119,13 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/usuario/perfil"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('user', true)"
+                (click)="navigateRole('user')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
                   </svg>
-                  Mi perfil y tema
+                  Mi perfil
                 </span>
               </a>
             </div>
@@ -126,19 +135,19 @@ import { ToastService } from './core/services/toast.service';
 
           <!-- MENÚ CONSOLA DE ADMINISTRADOR -->
           <div>
-            <div class="nav-label">CONSOLA DE ADMINISTRADOR</div>
+            <div class="nav-label">ADMINISTRACIÓN</div>
             <div class="nav-group">
               <a
                 routerLink="/admin/resumen"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('admin', true)"
+                (click)="navigateRole('admin')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
                   </svg>
-                  Dashboard Admin
+                  Resumen general
                 </span>
               </a>
 
@@ -146,14 +155,14 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/admin/usuarios"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('admin', true)"
+                (click)="navigateRole('admin')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/>
                     <path d="M17 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5"/>
                   </svg>
-                  CRUD Usuarios
+                  Usuarios
                 </span>
                 <span class="nav-badge">{{ api.usuarios().length }}</span>
               </a>
@@ -162,13 +171,13 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/admin/cuentas"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('admin', true)"
+                (click)="navigateRole('admin')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/>
                   </svg>
-                  CRUD Cuentas
+                  Cuentas
                 </span>
                 <span class="nav-badge">{{ api.cuentas().length }}</span>
               </a>
@@ -177,13 +186,13 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/admin/divisiones"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('admin', true)"
+                (click)="navigateRole('admin')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>
                   </svg>
-                  CRUD Divisiones
+                  Divisiones
                 </span>
                 <span class="nav-badge">{{ api.divisiones().length }}</span>
               </a>
@@ -192,27 +201,16 @@ import { ToastService } from './core/services/toast.service';
                 routerLink="/admin/sistema"
                 routerLinkActive="active"
                 class="nav-item"
-                (click)="auth.setRole('admin', true)"
+                (click)="navigateRole('admin')"
               >
                 <span class="nav-item-left">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
                     <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
                   </svg>
-                  API .NET &amp; /dbtest
+                  Sistema
                 </span>
               </a>
-            </div>
-          </div>
-
-          <div class="workspace-box">
-            <p>Proyecto Conectado</p>
-            <div class="workspace-inner">
-              <div class="ws-avatar">SI</div>
-              <div>
-                <strong>SeparacionCuentas-API</strong>
-                <small>{{ api.isApiConnected() ? 'ASP.NET Core + SQL Server' : 'Híbrido Local + .NET API' }}</small>
-              </div>
             </div>
           </div>
         </aside>
@@ -221,42 +219,46 @@ import { ToastService } from './core/services/toast.service';
         <main class="app-main">
           <!-- TOPBAR GLOBAL -->
           <header class="topbar">
-            <div class="crumb">
-              <span>SplitBill AI</span>
-              <span style="opacity: 0.45">/</span>
-              <b>{{ auth.activeRole() === 'admin' ? 'Consola de Administrador' : 'Apartado de Usuario' }}</b>
+            <div class="topbar-left">
+              <button
+                type="button"
+                class="mobile-menu-btn"
+                (click)="mobileMenuOpen.set(true)"
+                aria-label="Abrir menú de navegación"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M3 6h18M3 12h18M3 18h18"/>
+                </svg>
+              </button>
+
+              <div class="crumb">
+                <span>SplitBill AI</span>
+                <span style="opacity: 0.45">/</span>
+                <b>{{ auth.activeRole() === 'admin' ? 'Consola de Administrador' : 'Portal de Usuario' }}</b>
+              </div>
             </div>
 
             <div class="top-right">
-              <!-- Estado de conexión con el backend .NET -->
-              <a routerLink="/admin/sistema" class="api-status-pill" title="Configurar o probar conexión con SeparacionCuentas-API">
+              <a routerLink="/admin/sistema" class="api-status-pill" title="Estado del servidor">
                 <span class="status-dot" [class.demo]="!api.isApiConnected()"></span>
-                <span>{{ api.isApiConnected() ? 'API .NET Conectada' : 'API .NET + Sync Local' }}</span>
+                <span>{{ api.isApiConnected() ? 'En línea' : 'Modo local' }}</span>
               </a>
 
-              <!-- Conmutador de Paletas: Blanco Hielo + Índigo vs Azul Noche + Dorado -->
-              <div class="theme-toggle-bar" role="group" aria-label="Selector de modo claro y oscuro">
-                <button
-                  type="button"
-                  class="theme-btn"
-                  [class.active]="theme.currentTheme() === 'indigo'"
-                  (click)="theme.setTheme('indigo')"
-                  title="Modo Claro: Blanco hielo + índigo"
-                >
-                  <span class="theme-swatch-mini" style="background: linear-gradient(135deg, #F3F6FB 50%, #4F46E5 50%)"></span>
-                  ☀️ Blanco + Índigo
-                </button>
-                <button
-                  type="button"
-                  class="theme-btn"
-                  [class.active]="theme.currentTheme() === 'gold'"
-                  (click)="theme.setTheme('gold')"
-                  title="Modo Oscuro: Azul noche + dorado"
-                >
-                  <span class="theme-swatch-mini" style="background: linear-gradient(135deg, #111828 50%, #F0C674 50%)"></span>
-                  🌙 Azul Noche + Dorado
-                </button>
-              </div>
+              <!-- Un solo botón limpio para cambiar entre Modo Claro y Modo Oscuro -->
+              <button
+                type="button"
+                class="theme-single-btn"
+                (click)="theme.toggleTheme()"
+                [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+              >
+                @if (theme.isDark()) {
+                  <span>☀️</span>
+                  <span>Modo claro</span>
+                } @else {
+                  <span>🌙</span>
+                  <span>Modo oscuro</span>
+                }
+              </button>
 
               <!-- Selector Rápido de Usuario Activo -->
               <div class="profile-Menu">
@@ -272,26 +274,20 @@ import { ToastService } from './core/services/toast.service';
                       <option [ngValue]="u.idUsuario">{{ u.nombre }}</option>
                     }
                   </select>
-                  <small style="display: block; font-size: 10px; color: var(--muted); margin-top: 2px;">
-                    {{ auth.activeRole() === 'admin' ? 'Rol: Administrador' : 'Rol: Participante / Pagador' }}
-                  </small>
                 </div>
               </div>
             </div>
           </header>
 
           <!-- VISTAS DINÁMICAS DE ANGULAR ROUTER -->
-          <router-outlet></router-outlet>
+          <div class="main-body">
+            <router-outlet></router-outlet>
+          </div>
 
-          <!-- PIE DE PÁGINA -->
-          <footer style="margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 11px;">
-            <span>
-              <b>SplitBill AI (slit.ia)</b> · Frontend Angular para <code>ThomasSuaza/SeparacionCuentas-API</code>
-            </span>
-            <span>
-              Paleta activa: <b style="color: var(--accent)">{{ theme.paletteLabel() }}</b> ·
-              Integrantes: Miguel Ángel Taborda, Jorge Galindo, Thomas Suaza
-            </span>
+          <!-- PIE DE PÁGINA LIMPIO -->
+          <footer class="app-footer">
+            <span>© 2026 SplitBill AI (slit.ia)</span>
+            <span>Gestión inteligente de cuentas compartidas</span>
           </footer>
         </main>
       </div>
@@ -321,8 +317,20 @@ export class AppComponent {
   readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
+  readonly mobileMenuOpen = signal<boolean>(false);
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen.set(false);
+  }
+
+  navigateRole(role: 'user' | 'admin'): void {
+    this.auth.setRole(role, true);
+    this.closeMobileMenu();
+  }
+
   switchWorkspaceRole(role: 'user' | 'admin'): void {
     this.auth.setRole(role);
+    this.closeMobileMenu();
     if (role === 'admin') {
       this.router.navigate(['/admin/resumen']);
     } else {

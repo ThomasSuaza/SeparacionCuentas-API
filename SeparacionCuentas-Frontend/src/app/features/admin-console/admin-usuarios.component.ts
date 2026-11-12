@@ -12,24 +12,23 @@ import { UsuarioResponse } from '../../core/models/api.models';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">CONSOLA DE ADMINISTRADOR · MÓDULO USUARIOS (/api/Usuario)</div>
-        <h1 class="page-title">Gestión CRUD de Usuarios</h1>
+        <div class="eyebrow">ADMINISTRACIÓN</div>
+        <h1 class="page-title">Gestión de Usuarios</h1>
         <p class="intro">
-          Administra los registros de la tabla <code>dbo.Usuario</code>: crear (<code>POST</code>), consultar (<code>GET</code>),
-          editar (<code>PUT</code>), eliminar (<code>DELETE</code>) y filtrar participantes por cuenta.
+          Crea, edita o elimina usuarios y consulta en qué cuentas participan.
         </p>
       </div>
       <button class="btn-primary" type="button" (click)="abrirNuevoUsuario()">
-        + Nuevo Usuario (POST /api/Usuario)
+        + Nuevo usuario
       </button>
     </div>
 
-    <!-- Barra de búsqueda y filtro por cuenta (RF05: GET /api/Usuario/cuenta/{idCuenta}/participantes) -->
+    <!-- Barra de búsqueda y filtro por cuenta -->
     <div class="panel" style="margin-bottom: 20px; padding: 16px;">
       <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
         <input
           class="form-control"
-          style="flex: 1; min-width: 240px;"
+          style="flex: 1; min-width: 220px;"
           type="text"
           [(ngModel)]="busqueda"
           placeholder="Buscar por nombre, correo o teléfono..."
@@ -37,44 +36,42 @@ import { UsuarioResponse } from '../../core/models/api.models';
 
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span style="font-size: 11.5px; font-weight: 750; color: var(--muted);">
-            Filtrar participantes de cuenta (RF05):
+            Filtrar por cuenta:
           </span>
           <select class="form-control" style="width: auto;" [(ngModel)]="filtroIdCuenta">
             <option [ngValue]="0">Todos los usuarios ({{ api.usuarios().length }})</option>
             @for (c of api.cuentas(); track c.idCuenta) {
-              <option [ngValue]="c.idCuenta">Cuenta #00{{ c.idCuenta }} · {{ c.descripcion }}</option>
+              <option [ngValue]="c.idCuenta">{{ c.descripcion }}</option>
             }
           </select>
         </div>
       </div>
     </div>
 
-    <!-- Tabla CRUD de Usuarios -->
+    <!-- Tabla de Usuarios -->
     <section class="panel">
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>ID (PK)</th>
               <th>Nombre</th>
-              <th>Correo Electrónico (UNIQUE)</th>
+              <th>Correo electrónico</th>
               <th>Teléfono</th>
-              <th>Cuentas Pagadas</th>
-              <th>Divisiones</th>
-              <th>Acciones Administrativas</th>
+              <th>Cuentas pagadas</th>
+              <th>Participaciones</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (u of usuariosFiltrados(); track u.idUsuario) {
               <tr>
-                <td><b>#{{ u.idUsuario }}</b></td>
                 <td>
                   <div style="display: flex; align-items: center; gap: 9px;">
                     <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
                     <strong>{{ u.nombre }}</strong>
                   </div>
                 </td>
-                <td><code>{{ u.correo }}</code></td>
+                <td>{{ u.correo }}</td>
                 <td>{{ u.telefono || 'No registrado' }}</td>
                 <td>
                   <span class="badge-status badge-info">
@@ -82,12 +79,12 @@ import { UsuarioResponse } from '../../core/models/api.models';
                   </span>
                 </td>
                 <td>
-                  <span class="pill">{{ contarDivisiones(u.idUsuario) }} divisiones</span>
+                  <span class="pill">{{ contarDivisiones(u.idUsuario) }} cuotas</span>
                 </td>
                 <td>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn-outline btn-sm" type="button" (click)="auth.selectUser(u.idUsuario)">
-                      Simular Sesión
+                      Activar perfil
                     </button>
                     <button class="btn-outline btn-sm" type="button" (click)="abrirEditarUsuario(u)">
                       Editar
@@ -107,42 +104,39 @@ import { UsuarioResponse } from '../../core/models/api.models';
     <!-- Modal Crear / Editar Usuario -->
     @if (mostrarModal()) {
       <div class="modal-backdrop" (click)="mostrarModal.set(false)">
-        <div class="modal-card" style="max-width: 500px;" (click)="$event.stopPropagation()">
+        <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>{{ editandoId() ? 'Editar Usuario #' + editandoId() : 'Crear Nuevo Usuario' }}</h2>
-              <p class="sub">
-                Endpoint: <code>{{ editandoId() ? 'PUT /api/Usuario/' + editandoId() : 'POST /api/Usuario' }}</code>
-              </p>
+              <h2>{{ editandoId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
+              <p class="sub">Completa los datos del participante.</p>
             </div>
-            <span class="pill">dbo.Usuario</span>
           </div>
 
           <form (ngSubmit)="guardarUsuario()" style="display: grid; gap: 14px;">
             <div class="form-group">
-              <label>Nombre completo (<code>nombre</code>)</label>
+              <label>Nombre completo</label>
               <input class="form-control" type="text" [(ngModel)]="formNombre" name="nombre" required />
             </div>
 
             <div class="form-group">
-              <label>Correo electrónico (<code>correo</code>)</label>
+              <label>Correo electrónico</label>
               <input class="form-control" type="email" [(ngModel)]="formCorreo" name="correo" required />
             </div>
 
             <div class="form-group">
-              <label>Teléfono (<code>telefono</code>)</label>
+              <label>Teléfono</label>
               <input class="form-control" type="text" [(ngModel)]="formTelefono" name="telefono" placeholder="+57 300 000 0000" />
             </div>
 
             <div class="form-group">
-              <label>Hash / Contraseña (<code>password_hash</code>)</label>
-              <input class="form-control" type="text" [(ngModel)]="formPasswordHash" name="passwordHash" required />
+              <label>Contraseña</label>
+              <input class="form-control" type="password" [(ngModel)]="formPasswordHash" name="passwordHash" required />
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
               <button class="btn-outline" type="button" (click)="mostrarModal.set(false)">Cancelar</button>
               <button class="btn-primary" type="submit">
-                {{ editandoId() ? 'Actualizar Usuario' : 'Crear Usuario' }}
+                {{ editandoId() ? 'Guardar cambios' : 'Crear usuario' }}
               </button>
             </div>
           </form>
@@ -201,7 +195,7 @@ export class AdminUsuariosComponent {
     this.editandoId.set(null);
     this.formNombre = '';
     this.formCorreo = '';
-    this.formTelefono = '+57 310 ';
+    this.formTelefono = '';
     this.formPasswordHash = 'HASH_SHA256_SPLITBILL';
     this.mostrarModal.set(true);
   }
