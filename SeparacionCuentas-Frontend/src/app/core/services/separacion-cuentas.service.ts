@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError, tap, map, forkJoin } from 'rxjs';
+import { Observable, of, catchError, tap, map, forkJoin, switchMap } from 'rxjs';
 import {
   Usuario,
   UsuarioResponse,
@@ -545,22 +545,26 @@ export class SeparacionCuentasService {
     );
   }
 
-  updateDivision(id: number, payload: Division): Observable<Division> {
+  updateDivision(id: number, payload: Division, silent = false): Observable<Division> {
     const url = `${this.apiUrl()}/api/Division/${id}`;
     return this.http.put<Division>(url, payload).pipe(
       tap(updated => {
         const list = this.divisiones().map(d => (d.idDivision === id ? updated : d));
         this.divisiones.set(list);
         this.saveLocal(this.STORAGE_KEYS.DIVISIONES, list);
-        this.addAudit('Division', 'PUT', `/api/Division/${id}`, `División #${id} -> ${updated.estado}`, 'API .NET');
-        this.toast.show(`División #${id} actualizada (${updated.estado}).`, 'success');
+        this.addAudit('Division', 'PUT', `/api/Division/${id}`, `División #${id} -> ${updated.estado} ($${updated.monto})`, 'API .NET');
+        if (!silent) {
+          this.toast.show(`División #${id} actualizada (${updated.estado}).`, 'success');
+        }
       }),
       catchError(() => {
         const list = this.divisiones().map(d => (d.idDivision === id ? payload : d));
         this.divisiones.set(list);
         this.saveLocal(this.STORAGE_KEYS.DIVISIONES, list);
-        this.addAudit('Division', 'PUT', `/api/Division/${id}`, `División #${id} -> ${payload.estado}`, 'Local Sync');
-        this.toast.show(`Pago/división #${id} actualizado (${payload.estado}).`, 'success');
+        this.addAudit('Division', 'PUT', `/api/Division/${id}`, `División #${id} -> ${payload.estado} ($${payload.monto})`, 'Local Sync');
+        if (!silent) {
+          this.toast.show(`Pago/división #${id} actualizado (${payload.estado}).`, 'success');
+        }
         return of(payload);
       })
     );
@@ -582,7 +586,118 @@ export class SeparacionCuentasService {
     this.divisiones.set(updated);
     this.saveLocal(this.STORAGE_KEYS.DIVISIONES, updated);
     this.addAudit('Division', 'DELETE', `/api/Division/${id}`, `División #${id} eliminada`, origen);
-    this.toast.show(`Participación eliminada de la cuenta.`, 'info');
+  }
+
+  /**
+   * Recalcula automáticamente en partes iguales todas las divisiones de una cuenta existente
+   * y actualiza cada cuota en SQL Server (PUT /api/Division/{id}).
+   */
+  recalcularPartesIgualesCuenta(idCuenta: number): Observable<void> {
+    const cuenta = this.cuentas().find(c => c.idCuenta === idCuenta);
+    const divs = this.divisiones().filter(d => d.idCuenta === idCuenta);
+    if (!cuenta || divs.length === 0) {
+      return of(void 0);
+    }
+
+    const montoTotal = Number(cuenta.montoTotal);
+    const n = divs.length;
+    const cuotaBase = Math.floor(montoTotal / n);
+    const residuo = montoTotal - cuotaBase * n;
+
+    const peticiones = divs.map((d, index) => {
+      const nuevoMonto = index === 0 ? cuotaBase + residuo : cuotaBase;
+      return this.updateDivision(
+        d.idDivision,
+        {
+          ...d,
+          monto: nuevoMonto
+        },
+        true
+      );
+    });
+
+    return forkJoin(peticiones).pipe(
+      tap(() => {
+        this.toast.show(
+          `Cuotas recalculadas entre ${n} participantes ($${cuotaBase.toLocaleString('es-CO')} COP c/u).`,
+          'success'
+        );
+      }),
+      map(() => void 0)
+    );
+  }
+
+  /**
+   * Agrega un participante a una cuenta existente y recalcula automáticamente las cuotas de todos.
+   */
+  agregarParticipanteACuenta(
+    idCuenta: number,
+    idUsuario: number,
+    recalcularIguales = true,
+    montoPersonalizado?: number
+  ): Observable<void> {
+    const cuenta = this.cuentas().find(c => c.idCuenta === idCuenta);
+    if (!cuenta) return of(void 0);
+
+    const yaExiste = this.divisiones().some(
+      d => d.idCuenta === idCuenta && d.idUsuario === Number(idUsuario)
+    );
+    if (yaExiste) {
+      this.toast.show('Este usuario ya participa en esta cuenta.', 'warning');
+      return of(void 0);
+    }
+
+    const divsActuales = this.divisiones().filter(d => d.idCuenta === idCuenta);
+    const nuevoTotalPersonas = divsActuales.length + 1;
+    const montoInicial = recalcularIguales
+      ? Math.floor(Number(cuenta.montoTotal) / nuevoTotalPersonas)
+      : Number(montoPersonalizado || Math.floor(Number(cuenta.montoTotal) / nuevoTotalPersonas));
+
+    const esPagador = Number(idUsuario) === cuenta.idUsuarioPagador;
+
+    return this.createDivision({
+      idCuenta,
+      idUsuario: Number(idUsuario),
+      monto: montoInicial,
+      estado: esPagador ? 'PAGADO' : 'PENDIENTE',
+      tipoPago: esPagador ? 'Nequi' : null,
+      referenciaPago: esPagador ? 'PAGADOR-ORIGEN' : null,
+      fechaPago: esPagador ? new Date().toISOString() : null
+    }).pipe(
+      switchMap(() => {
+        if (recalcularIguales) {
+          return this.recalcularPartesIgualesCuenta(idCuenta);
+        }
+        this.toast.show(
+          `Participante agregado con cuota de $${montoInicial.toLocaleString('es-CO')} COP.`,
+          'success'
+        );
+        return of(void 0);
+      })
+    );
+  }
+
+  /**
+   * Quita a un participante de una cuenta existente y recalcula automáticamente las cuotas restantes.
+   */
+  quitarParticipanteDeCuenta(
+    idCuenta: number,
+    idDivision: number,
+    recalcularIguales = true
+  ): Observable<void> {
+    const divTarget = this.divisiones().find(d => d.idDivision === idDivision);
+    const nombreQuitado = divTarget ? this.getNombreUsuario(divTarget.idUsuario) : 'Participante';
+
+    return this.deleteDivision(idDivision).pipe(
+      switchMap(() => {
+        const restantes = this.divisiones().filter(d => d.idCuenta === idCuenta);
+        if (recalcularIguales && restantes.length > 0) {
+          return this.recalcularPartesIgualesCuenta(idCuenta);
+        }
+        this.toast.show(`${nombreQuitado} fue retirado de la cuenta.`, 'info');
+        return of(void 0);
+      })
+    );
   }
 
   // ==========================================================================

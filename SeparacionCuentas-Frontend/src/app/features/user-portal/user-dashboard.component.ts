@@ -197,7 +197,23 @@ import { Division, MetodoPago } from '../../core/models/api.models';
                 <b>&#36;{{ saldoPagadorCuentaActiva() | number:'1.0-0' }} COP</b>
               </p>
             </div>
-            <span class="pill">{{ divisionesCuentaActiva().length }} personas</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                (click)="api.recalcularPartesIgualesCuenta(cuenta.idCuenta).subscribe()"
+                title="Recalcular cuotas en partes iguales"
+              >
+                ⚖️ Recalcular
+              </button>
+              <button
+                type="button"
+                class="btn-primary btn-sm"
+                (click)="abrirModalAgregarUsuarioCuenta()"
+              >
+                + Usuario
+              </button>
+            </div>
           </div>
 
           <div style="height: 1px; background: var(--border); margin: 14px 0;"></div>
@@ -225,7 +241,7 @@ import { Division, MetodoPago } from '../../core/models/api.models';
                 </div>
               </div>
 
-              <div style="text-align: right; display: flex; align-items: center; gap: 10px;">
+              <div style="text-align: right; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div>
                   <div style="font-size: 13px; font-weight: 800;">&#36;{{ div.monto | number:'1.0-0' }}</div>
                   @if (div.estado === 'PAGADO') {
@@ -246,6 +262,18 @@ import { Division, MetodoPago } from '../../core/models/api.models';
                 } @else {
                   <button class="btn-outline btn-sm" type="button" (click)="revertirAPendiente(div)" title="Marcar como pendiente">
                     ↺
+                  </button>
+                }
+
+                @if (divisionesCuentaActiva().length > 1) {
+                  <button
+                    class="btn-danger btn-sm"
+                    type="button"
+                    style="padding: 5px 8px;"
+                    title="Quitar de la cuenta y recalcular cuotas"
+                    (click)="quitarParticipante(cuenta.idCuenta, div.idDivision)"
+                  >
+                    ✕
                   </button>
                 }
               </div>
@@ -271,6 +299,106 @@ import { Division, MetodoPago } from '../../core/models/api.models';
             </a>
           </div>
         </section>
+      </div>
+    }
+
+    <!-- Modal para Agregar Usuario (Existente o Nuevo) a la Cuenta Activa y Recalcular -->
+    @if (mostrarModalAgregarUsuario() && cuentaActiva(); as cuentaDest) {
+      <div class="modal-backdrop" (click)="mostrarModalAgregarUsuario.set(false)">
+        <div class="modal-card" style="max-width: 500px;" (click)="$event.stopPropagation()">
+          <div class="panel-head">
+            <div>
+              <h2>Agregar usuario a la cuenta</h2>
+              <p class="sub">
+                <b>{{ cuentaDest.descripcion }}</b> · Se recalcularán las cuotas automáticamente.
+              </p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-alt); padding: 4px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 14px;">
+            <button
+              type="button"
+              style="border: 0; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;"
+              [style.background]="modoAgregar() === 'existente' ? 'var(--accent)' : 'transparent'"
+              [style.color]="modoAgregar() === 'existente' ? 'var(--on-accent)' : 'var(--muted)'"
+              (click)="modoAgregar.set('existente')"
+            >
+              👤 Usuario existente
+            </button>
+            <button
+              type="button"
+              style="border: 0; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;"
+              [style.background]="modoAgregar() === 'nuevo' ? 'var(--accent)' : 'transparent'"
+              [style.color]="modoAgregar() === 'nuevo' ? 'var(--on-accent)' : 'var(--muted)'"
+              (click)="modoAgregar.set('nuevo')"
+            >
+              ➕ Crear usuario nuevo
+            </button>
+          </div>
+
+          <form (ngSubmit)="confirmarAgregarUsuarioCuenta()" style="display: grid; gap: 13px;">
+            @if (modoAgregar() === 'existente') {
+              <div class="form-group">
+                <label>Seleccionar participante</label>
+                <select class="form-control" [(ngModel)]="usuarioExistenteId" name="usuarioExistenteId">
+                  @for (u of api.usuarios(); track u.idUsuario) {
+                    <option [ngValue]="u.idUsuario">{{ u.nombre }} ({{ u.correo }})</option>
+                  }
+                </select>
+              </div>
+            } @else {
+              <div class="form-group">
+                <label>Nombre completo</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="nuevoNombrePart"
+                  name="nuevoNombrePart"
+                  placeholder="Ej. Daniela Vélez"
+                  required
+                />
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Correo electrónico</label>
+                  <input
+                    class="form-control"
+                    type="email"
+                    [(ngModel)]="nuevoCorreoPart"
+                    name="nuevoCorreoPart"
+                    placeholder="daniela@correo.com"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Teléfono / Nequi</label>
+                  <input
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="nuevoTelefonoPart"
+                    name="nuevoTelefonoPart"
+                    placeholder="300 000 0000"
+                  />
+                </div>
+              </div>
+            }
+
+            <div style="padding: 11px 13px; border-radius: 11px; background: var(--surface-alt); border: 1px solid var(--border); font-size: 12px;">
+              ⚖️ <b>Recálculo automático:</b> Al añadir este participante, la cuenta de
+              <b>&#36;{{ cuentaDest.montoTotal | number:'1.0-0' }} COP</b> se dividirá entre
+              <b>{{ divisionesCuentaActiva().length + 1 }} personas</b>.
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+              <button class="btn-outline" type="button" (click)="mostrarModalAgregarUsuario.set(false)">
+                Cancelar
+              </button>
+              <button class="btn-primary" type="submit">
+                Agregar y recalcular cuotas
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     }
 
@@ -334,6 +462,14 @@ export class UserDashboardComponent {
 
   readonly selectedCuentaId = signal<number>(1);
   readonly divisionEnPago = signal<Division | null>(null);
+  readonly mostrarModalAgregarUsuario = signal<boolean>(false);
+  readonly modoAgregar = signal<'existente' | 'nuevo'>('existente');
+
+  usuarioExistenteId = 1;
+  nuevoNombrePart = '';
+  nuevoCorreoPart = '';
+  nuevoTelefonoPart = '';
+
   metodoPagoSeleccionado: MetodoPago = 'Nequi';
   referenciaPagoInput = '';
 
@@ -474,5 +610,57 @@ export class UserDashboardComponent {
       fechaPago: null
     };
     this.api.updateDivision(div.idDivision, payload).subscribe();
+  }
+
+  quitarParticipante(idCuenta: number, idDivision: number): void {
+    this.api.quitarParticipanteDeCuenta(idCuenta, idDivision, true).subscribe();
+  }
+
+  abrirModalAgregarUsuarioCuenta(): void {
+    const c = this.cuentaActiva();
+    if (!c) return;
+    const enCuenta = new Set(this.divisionesCuentaActiva().map(d => d.idUsuario));
+    const disponible = this.api.usuarios().find(u => !enCuenta.has(u.idUsuario));
+    this.usuarioExistenteId = disponible?.idUsuario || this.api.usuarios()[0]?.idUsuario || 1;
+    this.nuevoNombrePart = '';
+    this.nuevoCorreoPart = '';
+    this.nuevoTelefonoPart = '';
+    this.modoAgregar.set('existente');
+    this.mostrarModalAgregarUsuario.set(true);
+  }
+
+  confirmarAgregarUsuarioCuenta(): void {
+    const c = this.cuentaActiva();
+    if (!c) return;
+
+    if (this.modoAgregar() === 'nuevo') {
+      if (!this.nuevoNombrePart.trim()) return;
+      const nombre = this.nuevoNombrePart.trim();
+      const correo =
+        this.nuevoCorreoPart.trim() ||
+        `${nombre.toLowerCase().replace(/\s+/g, '.')}@spliy.ia`;
+
+      this.api
+        .createUsuario({
+          nombre,
+          correo,
+          telefono: this.nuevoTelefonoPart.trim() || null,
+          passwordHash: 'HASH_NUEVO_2026'
+        })
+        .subscribe(creado => {
+          this.api
+            .agregarParticipanteACuenta(c.idCuenta, creado.idUsuario, true)
+            .subscribe(() => {
+              this.mostrarModalAgregarUsuario.set(false);
+            });
+        });
+      return;
+    }
+
+    this.api
+      .agregarParticipanteACuenta(c.idCuenta, Number(this.usuarioExistenteId), true)
+      .subscribe(() => {
+        this.mostrarModalAgregarUsuario.set(false);
+      });
   }
 }

@@ -33,186 +33,176 @@ import { ToastService } from './core/services/toast.service';
             </button>
           </div>
 
-          <!-- Conmutador de Rol: Usuario vs Administrador -->
-          <div class="role-switcher" aria-label="Cambiar entre Usuario y Administrador">
-            <button
-              type="button"
-              class="role-tab"
-              [class.active]="auth.activeRole() === 'user'"
-              (click)="switchWorkspaceRole('user')"
-            >
-              👤 Usuario
-            </button>
-            <button
-              type="button"
-              class="role-tab"
-              [class.active]="auth.activeRole() === 'admin'"
-              (click)="switchWorkspaceRole('admin')"
-            >
-              🛡️ Admin
-            </button>
-          </div>
+          @if (auth.activeRole() === 'admin') {
+            <!-- MENÚ EXCLUSIVO DE ADMINISTRACIÓN (Solo visible en rutas /admin) -->
+            <div>
+              <div class="nav-label">ADMINISTRACIÓN</div>
+              <div class="nav-group">
+                <a
+                  routerLink="/admin/resumen"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('admin')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                    </svg>
+                    Panel de control
+                  </span>
+                </a>
 
-          <!-- MENÚ APARTADO DE USUARIO -->
-          <div>
-            <div class="nav-label">PORTAL DE USUARIO</div>
-            <div class="nav-group">
-              <a
-                routerLink="/usuario/panel"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('user')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                  </svg>
-                  Panel general
-                </span>
-              </a>
+                <a
+                  routerLink="/admin/usuarios"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('admin')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/>
+                      <path d="M17 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5"/>
+                    </svg>
+                    Usuarios
+                  </span>
+                  <span class="nav-badge">{{ api.usuarios().length }}</span>
+                </a>
 
-              <a
-                routerLink="/usuario/cuentas"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('user')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 10h18"/>
-                  </svg>
-                  Mis cuentas
-                </span>
-                <span class="nav-badge">{{ api.cuentas().length }}</span>
-              </a>
+                <a
+                  routerLink="/admin/cuentas"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('admin')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/>
+                    </svg>
+                    Cuentas y facturas
+                  </span>
+                  <span class="nav-badge">{{ api.cuentas().length }}</span>
+                </a>
 
-              <a
-                routerLink="/usuario/pagos"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('user')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                  </svg>
-                  Mis pagos
-                </span>
-              </a>
+                <a
+                  routerLink="/admin/divisiones"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('admin')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>
+                    </svg>
+                    Transacciones
+                  </span>
+                  <span class="nav-badge">{{ api.divisiones().length }}</span>
+                </a>
 
-              <a
-                routerLink="/usuario/saldos"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('user')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M5 8h14M5 12h14M5 16h9"/><path d="M4 3h16v18H4z"/>
-                  </svg>
-                  Saldos y devoluciones
-                </span>
-              </a>
+                <a
+                  routerLink="/admin/sistema"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('admin')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    </svg>
+                    Auditoría
+                  </span>
+                </a>
+              </div>
 
-              <a
-                routerLink="/usuario/perfil"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('user')"
+              <div class="separator"></div>
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                style="width: 100%;"
+                (click)="switchWorkspaceRole('user')"
               >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
-                  </svg>
-                  Mi perfil
-                </span>
-              </a>
+                ← Volver a vista de usuario
+              </button>
             </div>
-          </div>
+          } @else {
+            <!-- MENÚ DE LA VISTA DE USUARIO (Sin apartado administrativo) -->
+            <div>
+              <div class="nav-label">MENÚ PRINCIPAL</div>
+              <div class="nav-group">
+                <a
+                  routerLink="/usuario/panel"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('user')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    Panel general
+                  </span>
+                </a>
 
-          <div class="separator"></div>
+                <a
+                  routerLink="/usuario/cuentas"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('user')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 10h18"/>
+                    </svg>
+                    Mis cuentas
+                  </span>
+                  <span class="nav-badge">{{ api.cuentas().length }}</span>
+                </a>
 
-          <!-- MENÚ CONSOLA DE ADMINISTRADOR -->
-          <div>
-            <div class="nav-label">ADMINISTRACIÓN</div>
-            <div class="nav-group">
-              <a
-                routerLink="/admin/resumen"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('admin')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
-                  </svg>
-                  Panel de control
-                </span>
-              </a>
+                <a
+                  routerLink="/usuario/pagos"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('user')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    Mis pagos
+                  </span>
+                </a>
 
-              <a
-                routerLink="/admin/usuarios"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('admin')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2"/>
-                    <path d="M17 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5"/>
-                  </svg>
-                  Usuarios
-                </span>
-                <span class="nav-badge">{{ api.usuarios().length }}</span>
-              </a>
+                <a
+                  routerLink="/usuario/saldos"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('user')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M5 8h14M5 12h14M5 16h9"/><path d="M4 3h16v18H4z"/>
+                    </svg>
+                    Saldos y devoluciones
+                  </span>
+                </a>
 
-              <a
-                routerLink="/admin/cuentas"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('admin')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/>
-                  </svg>
-                  Cuentas y facturas
-                </span>
-                <span class="nav-badge">{{ api.cuentas().length }}</span>
-              </a>
-
-              <a
-                routerLink="/admin/divisiones"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('admin')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>
-                  </svg>
-                  Transacciones
-                </span>
-                <span class="nav-badge">{{ api.divisiones().length }}</span>
-              </a>
-
-              <a
-                routerLink="/admin/sistema"
-                routerLinkActive="active"
-                class="nav-item"
-                (click)="navigateRole('admin')"
-              >
-                <span class="nav-item-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-                  </svg>
-                  Auditoría
-                </span>
-              </a>
+                <a
+                  routerLink="/usuario/perfil"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  (click)="navigateRole('user')"
+                >
+                  <span class="nav-item-left">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+                    </svg>
+                    Mi perfil
+                  </span>
+                </a>
+              </div>
             </div>
-          </div>
+          }
         </aside>
 
         <!-- CONTENIDO PRINCIPAL -->
