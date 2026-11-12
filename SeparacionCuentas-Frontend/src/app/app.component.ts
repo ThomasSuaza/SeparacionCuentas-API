@@ -255,7 +255,7 @@ import { ToastService } from './core/services/toast.service';
                 }
               </button>
 
-              <!-- Botones de Login y Register -->
+              <!-- Botones de Login, Register y Mi Perfil -->
               <button
                 type="button"
                 class="btn-outline btn-sm"
@@ -272,19 +272,21 @@ import { ToastService } from './core/services/toast.service';
                 + Registrarse
               </button>
 
-              <!-- Usuario activo -->
-              <div
-                class="profile-Menu"
-                style="cursor: pointer;"
-                (click)="abrirModalAuth('login')"
-                title="Cambiar de cuenta o añadir usuario"
-              >
-                <div class="avatar-circle">{{ auth.iniciales() }}</div>
-                <div style="line-height: 1.2;">
-                  <strong style="font-size: 12px; display: block;">{{ auth.currentUser().nombre }}</strong>
-                  <small style="font-size: 10px; color: var(--muted);">{{ auth.currentUser().correo }}</small>
-                </div>
-              </div>
+              <!-- Acceso directo a Mi Perfil Real -->
+              @if (auth.isLoggedIn()) {
+                <a
+                  routerLink="/usuario/perfil"
+                  class="profile-Menu"
+                  style="cursor: pointer;"
+                  title="Ver mi perfil de usuario"
+                >
+                  <div class="avatar-circle">{{ auth.iniciales() }}</div>
+                  <div style="line-height: 1.2;">
+                    <strong style="font-size: 12px; display: block;">{{ auth.currentUser().nombre }}</strong>
+                    <small style="font-size: 10px; color: var(--accent); font-weight: 700;">Ver mi perfil →</small>
+                  </div>
+                </a>
+              }
             </div>
           </header>
 
@@ -330,20 +332,20 @@ import { ToastService } from './core/services/toast.service';
             @if (mode === 'login') {
               <div class="panel-head" style="margin-bottom: 12px;">
                 <div>
-                  <h2>Bienvenido a spliy.IA</h2>
-                  <p class="sub">Ingresa con tu correo electrónico o selecciona tu cuenta para añadir y dividir gastos.</p>
+                  <h2>Iniciar sesión en spliy.IA</h2>
+                  <p class="sub">Ingresa tu correo o nombre de usuario, o selecciona una cuenta registrada.</p>
                 </div>
               </div>
 
               <form (ngSubmit)="submitLogin()" style="display: grid; gap: 13px; margin-bottom: 18px;">
                 <div class="form-group">
-                  <label>Correo electrónico</label>
+                  <label>Correo electrónico o nombre de usuario</label>
                   <input
                     class="form-control"
-                    type="email"
+                    type="text"
                     [(ngModel)]="loginCorreo"
                     name="loginCorreo"
-                    placeholder="ejemplo@correo.com"
+                    placeholder="Ej. thomas@correo.com o tu nombre"
                     required
                   />
                 </div>
@@ -359,19 +361,19 @@ import { ToastService } from './core/services/toast.service';
                   />
                 </div>
                 <button class="btn-primary" type="submit" style="width: 100%; margin-top: 4px;">
-                  Entrar a mi cuenta
+                  Iniciar sesión e ir a mi perfil
                 </button>
               </form>
 
               <div style="border-top: 1px solid var(--border); padding-top: 14px;">
                 <div style="font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 10px; text-transform: uppercase;">
-                  O selecciona una cuenta registrada ({{ api.usuarios().length }}):
+                  O entra con un clic a una cuenta registrada ({{ api.usuarios().length }}):
                 </div>
                 <div style="display: grid; gap: 8px; max-height: 200px; overflow-y: auto;">
                   @for (u of api.usuarios(); track u.idUsuario) {
                     <div
                       style="display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                      [style.border-color]="auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
+                      [style.border-color]="auth.isLoggedIn() && auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
                       (click)="seleccionarCuentaRapida(u.idUsuario)"
                     >
                       <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
@@ -381,10 +383,10 @@ import { ToastService } from './core/services/toast.service';
                           <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
                         </div>
                       </div>
-                      @if (auth.currentUser().idUsuario === u.idUsuario) {
+                      @if (auth.isLoggedIn() && auth.currentUser().idUsuario === u.idUsuario) {
                         <span class="badge-status badge-success">Activa</span>
                       } @else {
-                        <span style="font-size: 11.5px; font-weight: 700; color: var(--accent);">Usar →</span>
+                        <span style="font-size: 11.5px; font-weight: 700; color: var(--accent);">Entrar →</span>
                       }
                     </div>
                   }
@@ -515,22 +517,27 @@ export class AppComponent {
   }
 
   abrirModalAuth(mode: 'login' | 'register'): void {
-    this.loginCorreo = this.auth.currentUser().correo;
+    this.loginCorreo = '';
     this.loginPassword = '';
     this.auth.openAuthModal(mode);
   }
 
   seleccionarCuentaRapida(idUsuario: number): void {
     this.auth.selectUser(idUsuario);
+    this.auth.setRole('user', true);
     this.auth.closeAuthModal();
+    this.router.navigate(['/usuario/perfil']);
   }
 
   submitLogin(): void {
     if (!this.loginCorreo.trim()) return;
-    const ok = this.auth.loginByEmail(this.loginCorreo);
-    if (ok) {
+    this.auth.loginWithCredentials(this.loginCorreo, this.loginPassword).subscribe(() => {
+      this.loginCorreo = '';
+      this.loginPassword = '';
+      this.auth.setRole('user', true);
       this.auth.closeAuthModal();
-    }
+      this.router.navigate(['/usuario/perfil']);
+    });
   }
 
   submitRegister(): void {
@@ -548,8 +555,9 @@ export class AppComponent {
         this.regTelefono = '';
         this.regPassword = '';
         this.auth.selectUser(created.idUsuario);
+        this.auth.setRole('user', true);
         this.auth.closeAuthModal();
-        this.router.navigate(['/usuario/cuentas']);
+        this.router.navigate(['/usuario/perfil']);
       });
   }
 }

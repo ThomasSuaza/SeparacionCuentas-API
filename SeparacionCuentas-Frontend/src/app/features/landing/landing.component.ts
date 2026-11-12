@@ -125,15 +125,15 @@ import { ThemeService } from '../../core/services/theme.service';
           } @else {
             <form (ngSubmit)="iniciarSesionCorreo()" style="display: grid; gap: 13px;">
               <div class="form-group">
-                <label>Correo electrónico</label>
-                <input class="form-control" type="email" [(ngModel)]="correoLogin" name="correoLogin" placeholder="thomas@correo.com" required />
+                <label>Correo electrónico o nombre de usuario</label>
+                <input class="form-control" type="text" [(ngModel)]="correoLogin" name="correoLogin" placeholder="Ej. thomas@correo.com o Thomas" required />
               </div>
               <div class="form-group">
                 <label>Contraseña</label>
                 <input class="form-control" type="password" [(ngModel)]="passwordLogin" name="passwordLogin" placeholder="••••••••" required />
               </div>
               <button class="btn-primary" type="submit" style="margin-top: 6px; width: 100%;">
-                Entrar a spliy.IA
+                Iniciar sesión e ir a mi perfil
               </button>
             </form>
           }
@@ -166,15 +166,17 @@ export class LandingComponent {
   loginAsUser(idUsuario: number): void {
     this.auth.selectUser(idUsuario);
     this.auth.setRole('user', true);
-    this.router.navigate(['/usuario/panel']);
+    this.router.navigate(['/usuario/perfil']);
   }
 
   iniciarSesionCorreo(): void {
     if (!this.correoLogin.trim()) return;
-    if (this.auth.loginByEmail(this.correoLogin)) {
+    this.auth.loginWithCredentials(this.correoLogin, this.passwordLogin).subscribe(() => {
+      this.correoLogin = '';
+      this.passwordLogin = '';
       this.auth.setRole('user', true);
-      this.router.navigate(['/usuario/panel']);
-    }
+      this.router.navigate(['/usuario/perfil']);
+    });
   }
 
   registrarUsuario(): void {
