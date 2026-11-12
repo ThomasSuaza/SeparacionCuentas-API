@@ -147,7 +147,7 @@ import { ToastService } from './core/services/toast.service';
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
                   </svg>
-                  Resumen general
+                  Panel de control
                 </span>
               </a>
 
@@ -177,7 +177,7 @@ import { ToastService } from './core/services/toast.service';
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9.5h20"/>
                   </svg>
-                  Cuentas
+                  Cuentas y facturas
                 </span>
                 <span class="nav-badge">{{ api.cuentas().length }}</span>
               </a>
@@ -192,7 +192,7 @@ import { ToastService } from './core/services/toast.service';
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>
                   </svg>
-                  Divisiones
+                  Transacciones
                 </span>
                 <span class="nav-badge">{{ api.divisiones().length }}</span>
               </a>
@@ -208,7 +208,7 @@ import { ToastService } from './core/services/toast.service';
                     <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
                     <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
                   </svg>
-                  Sistema
+                  Auditoría
                 </span>
               </a>
             </div>

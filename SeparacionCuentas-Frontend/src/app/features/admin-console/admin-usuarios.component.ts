@@ -12,15 +12,39 @@ import { UsuarioResponse } from '../../core/models/api.models';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">ADMINISTRACIÓN</div>
+        <div class="eyebrow">DIRECTORIO DE CLIENTES · SPLIY.IA</div>
         <h1 class="page-title">Gestión de Usuarios</h1>
         <p class="intro">
-          Crea, edita o elimina usuarios y consulta en qué cuentas participan.
+          Administra los usuarios registrados, su historial de cuentas creadas y el estado de su cartera.
         </p>
       </div>
       <button class="btn-primary" type="button" (click)="abrirNuevoUsuario()">
-        + Nuevo usuario
+        + Registrar usuario
       </button>
+    </div>
+
+    <!-- KPIs de Usuarios -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="tiny">Usuarios Registrados</div>
+        <strong>{{ api.usuarios().length }}</strong>
+        <small>Perfiles activos en la plataforma</small>
+      </div>
+      <div class="stat-card">
+        <div class="tiny">Organizadores de Cuentas</div>
+        <strong>{{ organizadoresCount() }}</strong>
+        <small>Usuarios que han pagado cuentas</small>
+      </div>
+      <div class="stat-card">
+        <div class="tiny">Usuarios al Día</div>
+        <strong style="color: var(--success);">{{ usuariosAlDiaCount() }}</strong>
+        <small>Sin cuotas pendientes de pago</small>
+      </div>
+      <div class="stat-card">
+        <div class="tiny">Con Saldo Pendiente</div>
+        <strong style="color: var(--warning);">{{ api.usuarios().length - usuariosAlDiaCount() }}</strong>
+        <small>Con cobros activos por liquidar</small>
+      </div>
     </div>
 
     <!-- Barra de búsqueda y filtro por cuenta -->
@@ -31,7 +55,7 @@ import { UsuarioResponse } from '../../core/models/api.models';
           style="flex: 1; min-width: 220px;"
           type="text"
           [(ngModel)]="busqueda"
-          placeholder="Buscar por nombre, correo o teléfono..."
+          placeholder="Buscar usuario por nombre, correo o teléfono..."
         />
 
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -54,37 +78,53 @@ import { UsuarioResponse } from '../../core/models/api.models';
         <table class="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Correo electrónico</th>
-              <th>Teléfono</th>
-              <th>Cuentas pagadas</th>
-              <th>Participaciones</th>
+              <th>Usuario</th>
+              <th>Contacto</th>
+              <th>Cuentas Organizadas</th>
+              <th>Cuotas Pagadas</th>
+              <th>Estado de Cartera</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (u of usuariosFiltrados(); track u.idUsuario) {
+              @let stats = obtenerEstadisticasUsuario(u.idUsuario);
               <tr>
                 <td>
-                  <div style="display: flex; align-items: center; gap: 9px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
-                    <strong>{{ u.nombre }}</strong>
+                    <div>
+                      <strong style="display: block;">{{ u.nombre }}</strong>
+                      <small style="font-size: 11px; color: var(--muted);">ID #{{ u.idUsuario }}</small>
+                    </div>
                   </div>
                 </td>
-                <td>{{ u.correo }}</td>
-                <td>{{ u.telefono || 'No registrado' }}</td>
                 <td>
-                  <span class="badge-status badge-info">
-                    {{ contarCuentasPagadas(u.idUsuario) }} cuentas
-                  </span>
+                  <div style="font-weight: 600;">{{ u.correo }}</div>
+                  <small style="font-size: 11px; color: var(--muted);">{{ u.telefono || 'Sin teléfono' }}</small>
                 </td>
                 <td>
-                  <span class="pill">{{ contarDivisiones(u.idUsuario) }} cuotas</span>
+                  <strong>{{ stats.cuentasPagadas }} cuentas</strong>
+                  <div style="font-size: 11px; color: var(--muted);">
+                    &#36;{{ stats.volumenOrganizado | number:'1.0-0' }} COP
+                  </div>
+                </td>
+                <td>
+                  <span class="pill">{{ stats.cuotasPagadas }} / {{ stats.cuotasTotales }} pagadas</span>
+                </td>
+                <td>
+                  @if (stats.saldoPendiente === 0) {
+                    <span class="badge-status badge-success">Al día</span>
+                  } @else {
+                    <span class="badge-status badge-warning">
+                      Pendiente &#36;{{ stats.saldoPendiente | number:'1.0-0' }}
+                    </span>
+                  }
                 </td>
                 <td>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn-outline btn-sm" type="button" (click)="auth.selectUser(u.idUsuario)">
-                      Activar perfil
+                      Usar cuenta
                     </button>
                     <button class="btn-outline btn-sm" type="button" (click)="abrirEditarUsuario(u)">
                       Editar
@@ -107,30 +147,30 @@ import { UsuarioResponse } from '../../core/models/api.models';
         <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>{{ editandoId() ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
-              <p class="sub">Completa los datos del participante.</p>
+              <h2>{{ editandoId() ? 'Editar usuario' : 'Registrar nuevo usuario' }}</h2>
+              <p class="sub">Ingresa la información de la cuenta de usuario en spliy.IA.</p>
             </div>
           </div>
 
           <form (ngSubmit)="guardarUsuario()" style="display: grid; gap: 14px;">
             <div class="form-group">
               <label>Nombre completo</label>
-              <input class="form-control" type="text" [(ngModel)]="formNombre" name="nombre" required />
+              <input class="form-control" type="text" [(ngModel)]="formNombre" name="nombre" placeholder="Ej. Laura Martínez" required />
             </div>
 
             <div class="form-group">
               <label>Correo electrónico</label>
-              <input class="form-control" type="email" [(ngModel)]="formCorreo" name="correo" required />
+              <input class="form-control" type="email" [(ngModel)]="formCorreo" name="correo" placeholder="laura@correo.com" required />
             </div>
 
             <div class="form-group">
               <label>Teléfono</label>
-              <input class="form-control" type="text" [(ngModel)]="formTelefono" name="telefono" placeholder="+57 300 000 0000" />
+              <input class="form-control" type="text" [(ngModel)]="formTelefono" name="telefono" placeholder="300 000 0000" />
             </div>
 
             <div class="form-group">
-              <label>Contraseña</label>
-              <input class="form-control" type="password" [(ngModel)]="formPasswordHash" name="passwordHash" required />
+              <label>Contraseña de acceso</label>
+              <input class="form-control" type="password" [(ngModel)]="formPasswordHash" name="passwordHash" placeholder="••••••••" required />
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
@@ -158,7 +198,22 @@ export class AdminUsuariosComponent {
   formNombre = '';
   formCorreo = '';
   formTelefono = '';
-  formPasswordHash = 'HASH_BCRYPT_2026';
+  formPasswordHash = '';
+
+  readonly organizadoresCount = computed(() => {
+    const ids = new Set(this.api.cuentas().map(c => c.idUsuarioPagador));
+    return ids.size;
+  });
+
+  readonly usuariosAlDiaCount = computed(() => {
+    const conDeuda = new Set(
+      this.api
+        .divisiones()
+        .filter(d => d.estado === 'PENDIENTE')
+        .map(d => d.idUsuario)
+    );
+    return this.api.usuarios().filter(u => !conDeuda.has(u.idUsuario)).length;
+  });
 
   readonly usuariosFiltrados = computed(() => {
     let lista = this.api.usuarios();
@@ -183,12 +238,22 @@ export class AdminUsuariosComponent {
     );
   });
 
-  contarCuentasPagadas(idUsuario: number): number {
-    return this.api.cuentas().filter(c => c.idUsuarioPagador === idUsuario).length;
-  }
+  obtenerEstadisticasUsuario(idUsuario: number) {
+    const cuentasPagadas = this.api.cuentas().filter(c => c.idUsuarioPagador === idUsuario);
+    const volumenOrganizado = cuentasPagadas.reduce((acc, c) => acc + Number(c.montoTotal), 0);
+    const misDivs = this.api.divisiones().filter(d => d.idUsuario === idUsuario);
+    const cuotasPagadas = misDivs.filter(d => d.estado === 'PAGADO').length;
+    const saldoPendiente = misDivs
+      .filter(d => d.estado === 'PENDIENTE')
+      .reduce((acc, d) => acc + Number(d.monto), 0);
 
-  contarDivisiones(idUsuario: number): number {
-    return this.api.divisiones().filter(d => d.idUsuario === idUsuario).length;
+    return {
+      cuentasPagadas: cuentasPagadas.length,
+      volumenOrganizado,
+      cuotasTotales: misDivs.length,
+      cuotasPagadas,
+      saldoPendiente
+    };
   }
 
   abrirNuevoUsuario(): void {
@@ -196,7 +261,7 @@ export class AdminUsuariosComponent {
     this.formNombre = '';
     this.formCorreo = '';
     this.formTelefono = '';
-    this.formPasswordHash = 'HASH_SHA256_SPLITBILL';
+    this.formPasswordHash = 'spliy2026';
     this.mostrarModal.set(true);
   }
 
@@ -205,7 +270,7 @@ export class AdminUsuariosComponent {
     this.formNombre = u.nombre;
     this.formCorreo = u.correo;
     this.formTelefono = u.telefono || '';
-    this.formPasswordHash = 'HASH_SHA256_SPLITBILL';
+    this.formPasswordHash = 'spliy2026';
     this.mostrarModal.set(true);
   }
 

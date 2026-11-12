@@ -11,21 +11,53 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">ADMINISTRACIÓN</div>
-        <h1 class="page-title">Gestión de Divisiones y Pagos</h1>
+        <div class="eyebrow">TRANSACCIONES Y RECAUDO · SPLIY.IA</div>
+        <h1 class="page-title">Centro de Transacciones y Pagos</h1>
         <p class="intro">
-          Consulta y administra todas las cuotas por participante, estados de pago y comprobantes.
+          Monitorea todas las transacciones procesadas, comprobantes de transferencia y cobros pendientes por participante.
         </p>
       </div>
       <button class="btn-primary" type="button" (click)="abrirCrearDivision()">
-        + Nueva división
+        + Registrar transacción / cuota
       </button>
+    </div>
+
+    <!-- KPIs de Transacciones -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="tiny">Total Movimientos</div>
+        <strong>{{ api.divisiones().length }}</strong>
+        <small>Cuotas y transacciones registradas</small>
+      </div>
+      <div class="stat-card">
+        <div class="tiny">Pagos Confirmados</div>
+        <strong style="color: var(--success);">&#36;{{ api.totalPagadoDivisiones() | number:'1.0-0' }}</strong>
+        <small>{{ pagadasCount() }} transacciones liquidadas</small>
+      </div>
+      <div class="stat-card">
+        <div class="tiny">Cobros Pendientes</div>
+        <strong style="color: var(--warning);">&#36;{{ api.totalPendienteDivisiones() | number:'1.0-0' }}</strong>
+        <small>{{ api.divisiones().length - pagadasCount() }} cuotas por cobrar</small>
+      </div>
+      <div class="stat-card">
+        <div class="tiny">Efectividad de Recaudo</div>
+        <strong>{{ tasaEfectividad() }}%</strong>
+        <small>Porcentaje de cartera recuperada</small>
+      </div>
     </div>
 
     <!-- Barra de filtros administrativos -->
     <div class="panel" style="margin-bottom: 20px; padding: 16px;">
       <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 180px;">
+        <input
+          class="form-control"
+          style="flex: 1.3; min-width: 200px;"
+          type="text"
+          [(ngModel)]="busqueda"
+          placeholder="Buscar por referencia (NEQ, QR), participante o cuenta..."
+        />
+
+        <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 170px;">
           <label style="font-size: 11.5px; font-weight: 750; color: var(--muted);">Cuenta:</label>
           <select class="form-control" [(ngModel)]="filtroCuenta">
             <option [ngValue]="0">Todas las cuentas</option>
@@ -35,7 +67,7 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
           </select>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 180px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 170px;">
           <label style="font-size: 11.5px; font-weight: 750; color: var(--muted);">Usuario:</label>
           <select class="form-control" [(ngModel)]="filtroUsuario">
             <option [ngValue]="0">Todos los usuarios</option>
@@ -45,12 +77,12 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
           </select>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 6px; min-width: 160px;">
+        <div style="display: flex; align-items: center; gap: 6px; min-width: 150px;">
           <label style="font-size: 11.5px; font-weight: 750; color: var(--muted);">Estado:</label>
           <select class="form-control" [(ngModel)]="filtroEstado">
             <option value="TODOS">Todos</option>
-            <option value="PAGADO">Pagado</option>
-            <option value="PENDIENTE">Pendiente</option>
+            <option value="PAGADO">Pagados</option>
+            <option value="PENDIENTE">Pendientes</option>
           </select>
         </div>
       </div>
@@ -61,22 +93,35 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
         <table class="data-table">
           <thead>
             <tr>
-              <th>Cuenta</th>
               <th>Participante</th>
+              <th>Cuenta Asociada</th>
               <th>Monto (COP)</th>
               <th>Estado</th>
-              <th>Método de pago</th>
-              <th>Referencia</th>
-              <th>Fecha de pago</th>
+              <th>Método / Comprobante</th>
+              <th>Fecha Transacción</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (d of divisionesFiltradas(); track d.idDivision) {
+              @let nombreUser = api.getNombreUsuario(d.idUsuario);
               <tr>
-                <td>{{ obtenerNombreCuenta(d.idCuenta) }}</td>
-                <td><strong>{{ api.getNombreUsuario(d.idUsuario) }}</strong></td>
-                <td><strong>&#36;{{ d.monto | number:'1.0-0' }}</strong></td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <div class="person-bubble" style="width: 30px; height: 30px; font-size: 11px;">
+                      {{ api.getIniciales(nombreUser) }}
+                    </div>
+                    <div>
+                      <strong style="display: block;">{{ nombreUser }}</strong>
+                      <small style="font-size: 10.5px; color: var(--muted);">TX #{{ d.idDivision }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <strong>{{ obtenerNombreCuenta(d.idCuenta) }}</strong>
+                  <div style="font-size: 10.5px; color: var(--muted);">Cuenta #{{ d.idCuenta }}</div>
+                </td>
+                <td><strong>&#36;{{ d.monto | number:'1.0-0' }} COP</strong></td>
                 <td>
                   <span
                     class="badge-status"
@@ -86,13 +131,19 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
                     {{ d.estado }}
                   </span>
                 </td>
-                <td>{{ d.tipoPago || '—' }}</td>
-                <td>{{ d.referenciaPago || '—' }}</td>
-                <td>{{ d.fechaPago ? (d.fechaPago | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                <td>
+                  @if (d.estado === 'PAGADO') {
+                    <strong>{{ d.tipoPago || 'Transferencia' }}</strong>
+                    <div style="font-size: 11px; color: var(--muted);">Ref: {{ d.referenciaPago || 'Confirmado' }}</div>
+                  } @else {
+                    <span style="color: var(--muted); font-size: 12px;">Pendiente de pago</span>
+                  }
+                </td>
+                <td>{{ d.fechaPago ? (d.fechaPago | date:'dd/MM/yyyy HH:mm') : 'En espera' }}</td>
                 <td>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn-outline btn-sm" type="button" (click)="alternarEstadoRapido(d)">
-                      {{ d.estado === 'PENDIENTE' ? '✓ Marcar pagado' : '↺ Pendiente' }}
+                      {{ d.estado === 'PENDIENTE' ? '✓ Confirmar pago' : '↺ Revertir' }}
                     </button>
                     <button class="btn-outline btn-sm" type="button" (click)="abrirEditarDivision(d)">
                       Editar
@@ -114,8 +165,8 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
         <div class="modal-card" style="max-width: 500px;" (click)="$event.stopPropagation()">
           <div class="panel-head">
             <div>
-              <h2>{{ editandoId() ? 'Editar división' : 'Nueva división' }}</h2>
-              <p class="sub">Asigna o actualiza la cuota de un participante.</p>
+              <h2>{{ editandoId() ? 'Editar transacción' : 'Registrar transacción o cuota' }}</h2>
+              <p class="sub">Asigna o actualiza el pago de un participante en una cuenta.</p>
             </div>
           </div>
 
@@ -162,14 +213,14 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
               </div>
 
               <div class="form-group">
-                <label>Referencia de pago</label>
+                <label>Referencia / Comprobante</label>
                 <input class="form-control" type="text" [(ngModel)]="formReferenciaPago" name="referenciaPago" placeholder="NEQ-123456" />
               </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
               <button class="btn-outline" type="button" (click)="mostrarModal.set(false)">Cancelar</button>
-              <button class="btn-primary" type="submit">Guardar</button>
+              <button class="btn-primary" type="submit">Guardar transacción</button>
             </div>
           </form>
         </div>
@@ -180,6 +231,7 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
 export class AdminDivisionesComponent {
   readonly api = inject(SeparacionCuentasService);
 
+  busqueda = '';
   filtroCuenta = 0;
   filtroUsuario = 0;
   filtroEstado = 'TODOS';
@@ -194,13 +246,37 @@ export class AdminDivisionesComponent {
   formTipoPago = '';
   formReferenciaPago = '';
 
+  readonly pagadasCount = computed(
+    () => this.api.divisiones().filter(d => d.estado === 'PAGADO').length
+  );
+
+  readonly tasaEfectividad = computed(() => {
+    const total = this.api.divisiones().length;
+    if (total === 0) return 0;
+    return Math.round((this.pagadasCount() / total) * 100);
+  });
+
   readonly divisionesFiltradas = computed(() => {
-    return this.api.divisiones().filter(d => {
-      if (Number(this.filtroCuenta) > 0 && d.idCuenta !== Number(this.filtroCuenta)) return false;
-      if (Number(this.filtroUsuario) > 0 && d.idUsuario !== Number(this.filtroUsuario)) return false;
-      if (this.filtroEstado !== 'TODOS' && d.estado !== this.filtroEstado) return false;
-      return true;
-    });
+    const q = this.busqueda.trim().toLowerCase();
+    return [...this.api.divisiones()]
+      .sort((a, b) => b.idDivision - a.idDivision)
+      .filter(d => {
+        if (Number(this.filtroCuenta) > 0 && d.idCuenta !== Number(this.filtroCuenta)) return false;
+        if (Number(this.filtroUsuario) > 0 && d.idUsuario !== Number(this.filtroUsuario)) return false;
+        if (this.filtroEstado !== 'TODOS' && d.estado !== this.filtroEstado) return false;
+        if (!q) return true;
+
+        const nombreUser = this.api.getNombreUsuario(d.idUsuario).toLowerCase();
+        const nombreCuenta = this.obtenerNombreCuenta(d.idCuenta).toLowerCase();
+        const ref = (d.referenciaPago || '').toLowerCase();
+        const metodo = (d.tipoPago || '').toLowerCase();
+        return (
+          nombreUser.includes(q) ||
+          nombreCuenta.includes(q) ||
+          ref.includes(q) ||
+          metodo.includes(q)
+        );
+      });
   });
 
   obtenerNombreCuenta(idCuenta: number): string {
@@ -214,7 +290,7 @@ export class AdminDivisionesComponent {
         ...d,
         estado: nuevoEstado,
         tipoPago: nuevoEstado === 'PAGADO' ? d.tipoPago || 'Nequi' : null,
-        referenciaPago: nuevoEstado === 'PAGADO' ? d.referenciaPago || `ADM-${Date.now().toString().slice(-5)}` : null,
+        referenciaPago: nuevoEstado === 'PAGADO' ? d.referenciaPago || `NEQ-${Date.now().toString().slice(-6)}` : null,
         fechaPago: nuevoEstado === 'PAGADO' ? new Date().toISOString() : null
       })
       .subscribe();
@@ -251,7 +327,7 @@ export class AdminDivisionesComponent {
       monto: Number(this.formMonto),
       estado: this.formEstado,
       tipoPago: isPaid ? this.formTipoPago.trim() || 'Transferencia' : null,
-      referenciaPago: isPaid ? this.formReferenciaPago.trim() || 'REF-ADMIN' : null,
+      referenciaPago: isPaid ? this.formReferenciaPago.trim() || 'REF-CONFIRMADA' : null,
       fechaPago: isPaid ? new Date().toISOString() : null
     };
 
