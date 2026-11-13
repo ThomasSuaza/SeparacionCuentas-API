@@ -38,7 +38,7 @@ Esto inicia SQL Server 2019 en `localhost,1433` con las credenciales configurada
 
 ### Opción B — SQL Server ya instalado (SSMS / Azure Data Studio / `sqlcmd`)
 1. Descarga o abre el archivo DDL ubicado en la raíz del repositorio: **`SplitIA_SeparacionCuentas_DDL.sql`**.
-2. Ejecútalo sobre tu instancia de SQL Server. Crea de forma segura la base de datos `SeparacionCuentas`, las `7` tablas, índices, vistas, procedimientos almacenados, trigger y usuarios iniciales.
+2. Ejecútalo sobre tu instancia de SQL Server. Crea de forma segura la base de datos `SeparacionCuentas`, las `7` tablas, índices, vistas, procedimientos almacenados, trigger y usuarios iniciales. *(En SSMS, haz clic derecho sobre **Bases de datos → Actualizar / F5** para ver la nueva base de datos; si deseas crearla con otro nombre como `SeparacionCuentas2`, usa `Ctrl+H` para reemplazar `SeparacionCuentas` en `IF DB_ID`, `CREATE DATABASE` y `USE`.)*
 3. Si tu instancia usa otro servidor, usuario o contraseña, ajusta `ConnectionStrings.sql` en `ApiCQRS/appsettings.json`.
 
 ---
