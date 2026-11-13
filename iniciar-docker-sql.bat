@@ -1,10 +1,10 @@
 @echo off
-title SplitBill AI - Iniciar SQL Server en Docker + Sincronizar API .NET
+title SplitIA - Iniciar SQL Server en Docker + Sincronizar API .NET
 echo ============================================================================
-echo   SPLITBILL AI (slit.ia) - INICIADOR DE DOCKER + SQL SERVER 2019
+echo   SPLITIA - INICIADOR DE DOCKER + SQL SERVER 2019
 echo ============================================================================
 echo.
-cd /d "C:\Users\Thomas\.gemini\antigravity\scratch\SeparacionCuentas-API"
+cd /d "%~dp0"
 
 echo [1/3] Verificando si Docker Desktop esta en ejecucion...
 docker info >nul 2>&1
@@ -27,9 +27,10 @@ curl -s http://localhost:5266/dbtest
 echo.
 echo.
 echo ============================================================================
-echo   SQL SERVER Y SEPARACIONCUENTAS-API CONECTADOS EXITOSAMENTE!
-echo   - Frontend Angular: http://localhost:4200
-echo   - API .NET + Swagger: http://localhost:5266/swagger
-echo   - Diagnostico SQL: http://localhost:5266/dbtest
+echo   SQL SERVER Y SPLITIA (SEPARACIONCUENTAS-API) CONECTADOS EXITOSAMENTE!
+echo   - Aplicacion Web SplitIA: http://localhost:5266
+echo   - Frontend Angular Dev:   http://localhost:4200
+echo   - API .NET + Swagger:     http://localhost:5266/swagger
+echo   - Diagnostico SQL:        http://localhost:5266/dbtest
 echo ============================================================================
 

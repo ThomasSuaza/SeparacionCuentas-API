@@ -1,7 +1,7 @@
 {
   "name": "separacion-cuentas-frontend",
   "version": "1.0.0",
-  "description": "Frontend completo en Angular para SeparacionCuentas-API (.NET 10 + SQL Server) - SplitBill AI (slit.ia) con Portal de Usuario y Consola de Administrador",
+  "description": "Frontend completo en Angular para SplitIA (SeparacionCuentas-API .NET 10 + SQL Server) con Portal de Usuario y Consola de Administrador",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json --open",

@@ -1,12 +1,12 @@
-# SplitBill AI (`slit.ia`) — Frontend Angular para `SeparacionCuentas-API`
+# SplitIA — Frontend Angular (`SeparacionCuentas-Frontend`)
 
-Aplicación web completa desarrollada en **Angular 19 (Standalone Components + Signals + Router)** conectada a la API REST en **.NET 10 + Dapper + SQL Server** ([`ThomasSuaza/SeparacionCuentas-API`](https://github.com/ThomasSuaza/SeparacionCuentas-API.git)).
+Aplicación web desarrollada en **Angular 19 (Standalone Components + Signals + Router)** integrada con **SeparacionCuentas-API** (**ASP.NET Core .NET 10 + Dapper + SQL Server**, [`ThomasSuaza/SeparacionCuentas-API`](https://github.com/ThomasSuaza/SeparacionCuentas-API.git)).
 
 ---
 
-## 🎨 Paletas de Color Incluidas
+## Paletas de color incluidas
 
-El sistema implementa las dos paletas solicitadas con cambio instantáneo en vivo y persistencia en `localStorage`:
+El sistema implementa cambio instantáneo entre tema claro y oscuro con persistencia en `localStorage`:
 
 1. **Modo Claro — Blanco Hielo + Índigo (`data-theme="indigo"`)**
    - `--bg: #F3F6FB` | `--surface: #FFFFFF` | `--surface-alt: #F7F8FE`
@@ -17,67 +17,68 @@ El sistema implementa las dos paletas solicitadas con cambio instantáneo en viv
 
 ---
 
-## 🏛️ Arquitectura del Proyecto Angular
+## Arquitectura del proyecto Angular
 
 ```text
 SeparacionCuentas-Frontend/
 ├── angular.json
+├── Dockerfile                                 # Imagen Angular + Nginx
 ├── package.json
-├── proxy.conf.json                  # Proxy hacia http://localhost:5266 (/api y /dbtest)
+├── proxy.conf.json                            # Proxy hacia http://localhost:5266 (/api y /dbtest)
 ├── tsconfig.json
-├── src/
-│   ├── index.html
-│   ├── main.ts
-│   ├── styles.css                   # Sistema de diseño global (Blanco+Índigo y Azul Noche+Dorado)
-│   ├── environments/
-│   │   ├── environment.ts
-│   │   └── environment.prod.ts
-│   └── app/
-│       ├── app.component.ts         # Shell global, Sidebar, Topbar, Selector de Tema y Rol
-│       ├── app.config.ts            # Configuración de Router y HttpClient
-│       ├── app.routes.ts            # 11 rutas (Bienvenida, Portal de Usuario y Consola Admin)
-│       ├── core/
-│       │   ├── models/
-│       │   │   └── api.models.ts    # Interfaces Usuario, Cuenta, Division, Saldos, Devoluciones, DbTest
-│       │   └── services/
-│       │       ├── separacion-cuentas.service.ts  # Cliente HTTP de los 20 endpoints + Sincronización híbrida
-│       │       ├── auth.service.ts                # Sesión activa de usuario y cambio de rol (Usuario/Admin)
-│       │       ├── theme.service.ts               # Motor de paletas Blanco+Índigo / Azul Noche+Dorado
-│       │       └── toast.service.ts               # Notificaciones en tiempo real
-│       └── features/
-│           ├── landing/
-│           │   └── landing.component.ts           # Presentación, selector rápido de usuario y registro
-│           ├── user-portal/                       # APARTADO DE USUARIO
-│           │   ├── user-dashboard.component.ts    # Panel general interactivo + consumos + pagos
-│           │   ├── user-cuentas.component.ts      # Mis cuentas + Calculadora SplitBill (iguales / consumo)
-│           │   ├── user-pagos.component.ts        # Mis divisiones, pasarela Nequi/Bancolombia/PSE y recibos
-│           │   ├── user-saldos.component.ts       # Saldos, devoluciones y cuadre (RECIBE / PAGA / SALDADO)
-│           │   └── user-perfil.component.ts       # Edición de perfil (PUT /api/Usuario/{id}) y tema
-│           └── admin-console/                     # CONSOLA DE ADMINISTRADOR
-│               ├── admin-overview.component.ts    # Dashboard ejecutivo, KPIs, auditoría y bitácora API
-│               ├── admin-usuarios.component.ts    # CRUD completo de Usuarios + filtro por cuenta (RF05)
-│               ├── admin-cuentas.component.ts     # CRUD completo de Cuentas + Inspector JSON de devoluciones
-│               ├── admin-divisiones.component.ts  # CRUD completo de Divisiones + cambio rápido de estado
-│               └── admin-sistema.component.ts     # Diagnóstico /dbtest + catálogo de los 20 endpoints
-└── dist/separacion-cuentas-frontend/browser/      # Compilación lista para navegador y servidor .NET
+└── src/
+    ├── index.html
+    ├── main.ts
+    ├── styles.css                             # Sistema de diseño global (claro y oscuro)
+    ├── environments/
+    │   ├── environment.ts
+    │   └── environment.prod.ts
+    └── app/
+        ├── app.component.ts                   # Shell global, Sidebar, Topbar, Selector de Tema, Login/Cambio de Perfil
+        ├── app.config.ts                      # Configuración de Router y HttpClient
+        ├── app.routes.ts                      # Rutas de Bienvenida, Portal de Usuario y Consola Admin
+        ├── core/
+        │   ├── models/
+        │   │   └── api.models.ts              # Interfaces Usuario, Cuenta, Division, LoginResponse, MetodosPago, etc.
+        │   └── services/
+        │       ├── separacion-cuentas.service.ts  # Cliente HTTP hacia Auth, Usuario, Cuenta, Division y Sistema
+        │       ├── auth.service.ts                # Sesión activa, validación contra /api/Auth/login y aislamiento por rol
+        │       ├── theme.service.ts               # Motor de paletas claro/oscuro
+        │       └── toast.service.ts               # Notificaciones en tiempo real
+        └── features/
+            ├── landing/
+            │   └── landing.component.ts           # Presentación SplitIA, acceso e inicio/registro rápido
+            ├── user-portal/                       # PORTAL DE USUARIO
+            │   ├── user-dashboard.component.ts    # Panel general interactivo, consumos y cuotas
+            │   ├── user-cuentas.component.ts      # Mis cuentas + agregar/quitar participantes + recálculo
+            │   ├── user-pagos.component.ts        # Mis divisiones, pasarela y comprobantes
+            │   ├── user-saldos.component.ts       # Saldos, devoluciones y cuadre (RECIBE / PAGA / SALDADO)
+            │   └── user-perfil.component.ts       # Login real, registro, cambio de perfil y edición de cuenta
+            └── admin-console/                     # CONSOLA DE ADMINISTRADOR
+                ├── admin-overview.component.ts    # Dashboard ejecutivo, KPIs, actividad reciente y auditoría
+                ├── admin-usuarios.component.ts    # CRUD completo de Usuarios + filtro por cuenta
+                ├── admin-cuentas.component.ts     # CRUD completo de Cuentas + Inspector JSON de devoluciones
+                ├── admin-divisiones.component.ts  # CRUD completo de Divisiones + cambio rápido de estado
+                └── admin-sistema.component.ts     # Diagnóstico /dbtest y endpoints del sistema
 ```
 
 ---
 
-## 🚀 Cómo Ejecutar el Proyecto
+## Cómo ejecutar
 
-### Opción 1:Con Angular CLI (`ng serve`)
+### Opción 1: Modo desarrollo Angular (`ng serve`)
 ```bash
-cd C:\Users\Thomas\.gemini\antigravity\scratch\SeparacionCuentas-Frontend
+cd SeparacionCuentas-Frontend
 npm install
 npm start
 ```
-La aplicación se abrirá en `http://localhost:4200` conectada mediante `proxy.conf.json` a `http://localhost:5266`.
+Se abre en `http://localhost:4200` conectado mediante `proxy.conf.json` a `http://localhost:5266`.
 
-### Opción 2: Integrado directamente con `.NET 10` (`dotnet run`)
-El backend en `C:\Users\Thomas\.gemini\antigravity\scratch\SeparacionCuentas-API\ApiCQRS` ya tiene configurado **CORS** y **Archivos Estáticos (`wwwroot`)**:
+### Opción 2: Servido directamente por `.NET 10` (`dotnet run`)
+El backend `ApiCQRS` incluye **CORS** y archivos estáticos en `ApiCQRS/wwwroot`:
+
 ```bash
-cd C:\Users\Thomas\.gemini\antigravity\scratch\SeparacionCuentas-API\ApiCQRS
-dotnet run
+dotnet run --project ../ApiCQRS --launch-profile http
 ```
-Luego abre `http://localhost:5266` para usar la aplicación web completa y `http://localhost:5266/swagger` para ver Swagger.
+
+Abre `http://localhost:5266` para usar **SplitIA** y `http://localhost:5266/swagger` para explorar Swagger.
