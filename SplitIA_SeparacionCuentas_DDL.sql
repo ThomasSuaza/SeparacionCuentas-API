@@ -1,9 +1,9 @@
 -- ============================================================================
 -- SplitIA · DDL Completo e Idempotente (SQL Server 2019+)
--- Incluye: Base de datos, 7 tablas, 8 indices, 2 vistas, 2 SPs, 1 trigger y seed inicial
--- NOTA SSMS: Si ya tienes la BD creada o quieres probar con otro nombre (ej. SplitIA_Prueba),
---            usa Ctrl+H para reemplazar "SeparacionCuentas" por "SplitIA_Prueba"
---            (en IF DB_ID, CREATE DATABASE y USE) y pulsa F5 sobre "Bases de datos" en SSMS.
+-- Base de datos: SeparacionCuentas
+-- Instrucciones: No selecciones texto parcial; presiona F5 (Ejecutar) completo.
+-- Al terminar, haz clic derecho en "Bases de datos" -> "Actualizar" en SSMS.
+-- Si quieres probar creando otra BD, reemplaza "SeparacionCuentas" con Ctrl+H.
 -- ============================================================================
 
 USE [master];
@@ -13,10 +13,6 @@ IF DB_ID(N'SeparacionCuentas') IS NULL
 BEGIN
     CREATE DATABASE [SeparacionCuentas];
     PRINT 'Base de datos [SeparacionCuentas] creada correctamente.';
-END
-ELSE
-BEGIN
-    PRINT 'La base de datos [SeparacionCuentas] ya existia; verificando objetos...';
 END
 GO
 
@@ -335,4 +331,14 @@ BEGIN
     ('Miguel Ángel Taborda', 'miguel.taborda@splitia.app', @HashDefault, '+57 301 778 4512', 'USUARIO', 1),
     ('Jorge Galindo', 'jorge.galindo@splitia.app', @HashDefault, '+57 318 334 1120', 'USUARIO', 1);
 END
+GO
+
+-- ============================================================================
+-- 7. VERIFICACION DE RESULTADO EN SSMS
+-- ============================================================================
+SELECT DB_NAME() AS BaseDatosActiva;
+SELECT name AS Tabla FROM sys.tables ORDER BY name;
+SELECT name AS Vista FROM sys.views ORDER BY name;
+SELECT name AS Procedimiento FROM sys.procedures ORDER BY name;
+SELECT id_usuario, nombre, correo, rol, activo FROM dbo.Usuario ORDER BY id_usuario;
 GO
