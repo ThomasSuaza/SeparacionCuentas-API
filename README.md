@@ -39,8 +39,12 @@ SeparacionCuentas-API
 ├── ApiCQRS.slnx                     # Solución .NET 10
 ├── Dockerfile                       # Imagen Docker para ApiCQRS
 ├── docker-compose.yml               # Contenedor SQL Server 2019 (puerto 1433)
-└── iniciar-docker-sql.bat           # Script Windows para iniciar SQL Server en Docker y verificar /dbtest
+├── iniciar-docker-sql.bat           # Script Windows para iniciar SQL Server en Docker y verificar /dbtest
+├── SplitIA_SeparacionCuentas_DDL.sql # Script DDL SQL Server listo para descargar/ejecutar
+└── INSTALACION.md                   # Guía mínima paso a paso para instalar, inicializar y montar SplitIA
 ```
+
+> **Inicio rápido y DDL descargable:** Consulta [INSTALACION.md](INSTALACION.md) para el montaje paso a paso y descarga [SplitIA_SeparacionCuentas_DDL.sql](SplitIA_SeparacionCuentas_DDL.sql) si deseas ejecutar el esquema completo directamente en SQL Server.
 
 ---
 
