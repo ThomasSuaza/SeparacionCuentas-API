@@ -27,7 +27,8 @@ namespace ApiCQRS.Repository.Implements
                     estado,
                     tipo_pago,
                     referencia_pago,
-                    fecha_pago
+                    fecha_pago,
+                    notas
                 )
                 VALUES
                 (
@@ -37,7 +38,8 @@ namespace ApiCQRS.Repository.Implements
                     @Estado,
                     @TipoPago,
                     @ReferenciaPago,
-                    @FechaPago
+                    @FechaPago,
+                    @Notas
                 );
 
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
@@ -60,7 +62,8 @@ namespace ApiCQRS.Repository.Implements
                     estado = @Estado,
                     tipo_pago = @TipoPago,
                     referencia_pago = @ReferenciaPago,
-                    fecha_pago = @FechaPago
+                    fecha_pago = @FechaPago,
+                    notas = @Notas
                 WHERE id_division = @IdDivision;
             ";
 

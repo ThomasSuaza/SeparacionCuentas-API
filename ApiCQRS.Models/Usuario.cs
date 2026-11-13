@@ -35,5 +35,20 @@ namespace ApiCQRS.Models
         /// Número telefónico del usuario.
         /// </summary>
         public string? Telefono { get; set; }
+
+        /// <summary>
+        /// Rol del usuario en SplitIA (USUARIO o ADMIN).
+        /// </summary>
+        public string Rol { get; set; } = "USUARIO";
+
+        /// <summary>
+        /// Indica si la cuenta de usuario está activa.
+        /// </summary>
+        public bool Activo { get; set; } = true;
+
+        /// <summary>
+        /// Fecha de registro del usuario.
+        /// </summary>
+        public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
     }
 }

@@ -12,7 +12,7 @@ import { UsuarioResponse } from '../../core/models/api.models';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">DIRECTORIO DE CLIENTES · SPLIY.IA</div>
+        <div class="eyebrow">DIRECTORIO DE CLIENTES · SPLITIA</div>
         <h1 class="page-title">Gestión de Usuarios</h1>
         <p class="intro">
           Administra los usuarios registrados, su historial de cuentas creadas y el estado de su cartera.
@@ -122,12 +122,16 @@ import { UsuarioResponse } from '../../core/models/api.models';
                   }
                 </td>
                 <td>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button class="btn-outline btn-sm" type="button" (click)="auth.selectUser(u.idUsuario)">
-                      Usar cuenta
-                    </button>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <span
+                      class="pill"
+                      style="font-size: 10px; padding: 3px 8px; color: var(--muted);"
+                      title="Por cumplimiento legal y privacidad, el administrador no puede entrar a la sesión privada del usuario sin sus credenciales."
+                    >
+                      🔒 Perfil privado
+                    </span>
                     <button class="btn-outline btn-sm" type="button" (click)="abrirEditarUsuario(u)">
-                      Editar
+                      Editar datos
                     </button>
                     <button class="btn-danger btn-sm" type="button" (click)="eliminarUsuario(u.idUsuario)">
                       Eliminar
@@ -148,7 +152,7 @@ import { UsuarioResponse } from '../../core/models/api.models';
           <div class="panel-head">
             <div>
               <h2>{{ editandoId() ? 'Editar usuario' : 'Registrar nuevo usuario' }}</h2>
-              <p class="sub">Ingresa la información de la cuenta de usuario en spliy.IA.</p>
+              <p class="sub">Ingresa la información de la cuenta de usuario en SplitIA.</p>
             </div>
           </div>
 
@@ -170,7 +174,7 @@ import { UsuarioResponse } from '../../core/models/api.models';
 
             <div class="form-group">
               <label>Contraseña de acceso</label>
-              <input class="form-control" type="password" [(ngModel)]="formPasswordHash" name="passwordHash" placeholder="••••••••" required />
+              <input class="form-control" type="password" [(ngModel)]="formPasswordHash" name="passwordHash" [placeholder]="editandoId() ? 'Dejar vacío para conservar actual' : '••••••••'" [required]="!editandoId()" />
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
@@ -261,7 +265,7 @@ export class AdminUsuariosComponent {
     this.formNombre = '';
     this.formCorreo = '';
     this.formTelefono = '';
-    this.formPasswordHash = 'spliy2026';
+    this.formPasswordHash = '123456';
     this.mostrarModal.set(true);
   }
 
@@ -270,32 +274,31 @@ export class AdminUsuariosComponent {
     this.formNombre = u.nombre;
     this.formCorreo = u.correo;
     this.formTelefono = u.telefono || '';
-    this.formPasswordHash = 'spliy2026';
+    this.formPasswordHash = '';
     this.mostrarModal.set(true);
   }
 
   guardarUsuario(): void {
     if (!this.formNombre.trim() || !this.formCorreo.trim()) return;
     const id = this.editandoId();
+    const payload = {
+      nombre: this.formNombre.trim(),
+      correo: this.formCorreo.trim(),
+      telefono: this.formTelefono.trim() || null,
+      passwordHash: this.formPasswordHash.trim() || (id ? 'HASH_UPDATED_2026' : '123456')
+    };
+
     if (id) {
       this.api
-        .updateUsuario(id, {
-          idUsuario: id,
-          nombre: this.formNombre.trim(),
-          correo: this.formCorreo.trim(),
-          telefono: this.formTelefono.trim() || null,
-          passwordHash: this.formPasswordHash.trim() || 'HASH_DEFAULT'
-        })
+        .updateUsuario(id, { idUsuario: id, ...payload })
         .subscribe(() => this.mostrarModal.set(false));
     } else {
-      this.api
-        .createUsuario({
-          nombre: this.formNombre.trim(),
-          correo: this.formCorreo.trim(),
-          telefono: this.formTelefono.trim() || null,
-          passwordHash: this.formPasswordHash.trim() || 'HASH_DEFAULT'
-        })
-        .subscribe(() => this.mostrarModal.set(false));
+      this.api.registerBackend(payload).subscribe({
+        next: () => this.mostrarModal.set(false),
+        error: () => {
+          this.api.createUsuario(payload).subscribe(() => this.mostrarModal.set(false));
+        }
+      });
     }
   }
 

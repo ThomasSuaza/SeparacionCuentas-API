@@ -11,7 +11,7 @@ import { Cuenta, ResumenDevolucionCuentaResponse } from '../../core/models/api.m
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">CUENTAS Y FACTURACIÓN · SPLIY.IA</div>
+        <div class="eyebrow">CUENTAS Y FACTURACIÓN · SPLITIA</div>
         <h1 class="page-title">Gestión de Cuentas Compartidas</h1>
         <p class="intro">
           Controla todas las cuentas registradas, su progreso de recaudo, pagadores y estado de distribución.

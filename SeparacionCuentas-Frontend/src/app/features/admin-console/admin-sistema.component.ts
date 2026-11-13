@@ -11,7 +11,7 @@ import { ToastService } from '../../core/services/toast.service';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">AUDITORÍA Y OPERACIONES · SPLIY.IA</div>
+        <div class="eyebrow">AUDITORÍA Y OPERACIONES · SPLITIA</div>
         <h1 class="page-title">Auditoría Financiera y Estado Operativo</h1>
         <p class="intro">
           Bitácora de transacciones recientes, conciliación de cuentas y estado de los servicios de datos.
@@ -121,7 +121,7 @@ import { ToastService } from '../../core/services/toast.service';
         <div class="panel-head">
           <div>
             <h2>Servicios e infraestructura</h2>
-            <p class="sub">Estado en tiempo real de los módulos de spliy.IA.</p>
+            <p class="sub">Estado en tiempo real de los módulos de SplitIA.</p>
           </div>
           <span
             class="badge-status"

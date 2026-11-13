@@ -49,5 +49,10 @@ namespace ApiCQRS.Models
         /// Fecha en la que se realizó el pago.
         /// </summary>
         public DateTime? FechaPago { get; set; }
+
+        /// <summary>
+        /// Notas u observaciones asociadas a esta división.
+        /// </summary>
+        public string? Notas { get; set; }
     }
 }

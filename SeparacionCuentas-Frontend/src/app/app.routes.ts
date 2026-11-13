@@ -13,21 +13,21 @@ import { AdminSistemaComponent } from './features/admin-console/admin-sistema.co
 
 export const routes: Routes = [
   { path: '', redirectTo: 'usuario/panel', pathMatch: 'full' },
-  { path: 'bienvenida', component: LandingComponent, title: 'Bienvenida | spliy.IA' },
+  { path: 'bienvenida', component: LandingComponent, title: 'Bienvenida | SplitIA' },
 
   // Portal de Usuario
-  { path: 'usuario/panel', component: UserDashboardComponent, title: 'Panel General | spliy.IA' },
-  { path: 'usuario/cuentas', component: UserCuentasComponent, title: 'Mis Cuentas | spliy.IA' },
-  { path: 'usuario/pagos', component: UserPagosComponent, title: 'Mis Pagos | spliy.IA' },
-  { path: 'usuario/saldos', component: UserSaldosComponent, title: 'Saldos y Devoluciones | spliy.IA' },
-  { path: 'usuario/perfil', component: UserPerfilComponent, title: 'Mi Perfil | spliy.IA' },
+  { path: 'usuario/panel', component: UserDashboardComponent, title: 'Panel General | SplitIA' },
+  { path: 'usuario/cuentas', component: UserCuentasComponent, title: 'Mis Cuentas | SplitIA' },
+  { path: 'usuario/pagos', component: UserPagosComponent, title: 'Mis Pagos | SplitIA' },
+  { path: 'usuario/saldos', component: UserSaldosComponent, title: 'Saldos y Devoluciones | SplitIA' },
+  { path: 'usuario/perfil', component: UserPerfilComponent, title: 'Mi Perfil | SplitIA' },
 
   // Consola de Administrador
-  { path: 'admin/resumen', component: AdminOverviewComponent, title: 'Administración | spliy.IA' },
-  { path: 'admin/usuarios', component: AdminUsuariosComponent, title: 'Usuarios | spliy.IA' },
-  { path: 'admin/cuentas', component: AdminCuentasComponent, title: 'Cuentas | spliy.IA' },
-  { path: 'admin/divisiones', component: AdminDivisionesComponent, title: 'Divisiones | spliy.IA' },
-  { path: 'admin/sistema', component: AdminSistemaComponent, title: 'Sistema | spliy.IA' },
+  { path: 'admin/resumen', component: AdminOverviewComponent, title: 'Administración | SplitIA' },
+  { path: 'admin/usuarios', component: AdminUsuariosComponent, title: 'Usuarios | SplitIA' },
+  { path: 'admin/cuentas', component: AdminCuentasComponent, title: 'Cuentas | SplitIA' },
+  { path: 'admin/divisiones', component: AdminDivisionesComponent, title: 'Divisiones | SplitIA' },
+  { path: 'admin/sistema', component: AdminSistemaComponent, title: 'Sistema | SplitIA' },
 
   { path: '**', redirectTo: 'usuario/panel' }
 ];

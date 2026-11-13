@@ -18,7 +18,7 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="avatar-circle" style="width: 56px; height: 56px; font-size: 20px; margin: 0 auto 12px;">
               S
             </div>
-            <h1 class="page-title" style="font-size: 22px;">Inicia sesión en spliy.IA</h1>
+            <h1 class="page-title" style="font-size: 22px;">Inicia sesión en SplitIA</h1>
             <p class="sub" style="margin-top: 6px;">
               Accede a tu perfil personal para ver tus cuentas compartidas, pagos realizados y saldos a favor.
             </p>
@@ -56,38 +56,26 @@ import { AuthService } from '../../core/services/auth.service';
 
           <div style="border-top: 1px solid var(--border); padding-top: 16px;">
             <div style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 10px;">
-              Perfiles disponibles para ingreso rápido:
+              Correos registrados (haz clic para autocompletar correo; requiere contraseña):
             </div>
-            <div style="display: grid; gap: 8px;">
-              <!-- Opción Perfil Administrador -->
-              <div
-                style="display: flex; align-items: center; justify-content: space-between; padding: 11px 12px; border-radius: 11px; border: 1.5px solid var(--accent); background: var(--surface-alt); cursor: pointer;"
-                (click)="auth.loginAsAdmin()"
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                style="font-size: 11px;"
+                (click)="loginInput = 'admin@splitia.app'; loginPass = 'admin123'"
               >
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div class="person-bubble" style="background: var(--accent-soft); color: var(--accent);">🛡️</div>
-                  <div>
-                    <strong style="font-size: 13px; display: block;">Administrador spliy.IA</strong>
-                    <small style="font-size: 11px; color: var(--muted);">admin&#64;spliy.ia · Perfil Administrativo</small>
-                  </div>
-                </div>
-                <span style="font-size: 12px; font-weight: 800; color: var(--accent);">Entrar Admin →</span>
-              </div>
-
+                🛡️ admin&#64;splitia.app (Clave: admin123)
+              </button>
               @for (u of api.usuarios(); track u.idUsuario) {
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                  (click)="auth.selectUser(u.idUsuario)"
+                <button
+                  type="button"
+                  class="btn-outline btn-sm"
+                  style="font-size: 11px;"
+                  (click)="loginInput = u.correo"
                 >
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
-                    <div>
-                      <strong style="font-size: 13px; display: block;">{{ u.nombre }}</strong>
-                      <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
-                    </div>
-                  </div>
-                  <span style="font-size: 12px; font-weight: 700; color: var(--accent);">Entrar →</span>
-                </div>
+                  👤 {{ u.correo }}
+                </button>
               }
             </div>
 
@@ -113,13 +101,13 @@ import { AuthService } from '../../core/services/auth.service';
             <div>
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <h1 style="font-size: 23px; font-weight: 800; letter-spacing: -0.02em; margin: 0;">
-                  Administrador spliy.IA
+                  Administrador SplitIA
                 </h1>
                 <span class="badge-status badge-info">🛡️ Perfil Administrador</span>
                 <span class="badge-status badge-success">✓ Acceso Total</span>
               </div>
               <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--muted);">
-                <span>📧 admin&#64;spliy.ia</span>
+                <span>📧 admin&#64;splitia.app</span>
                 <span>🔐 Rol: Superadministrador Financiero y de Sistema</span>
               </div>
             </div>
@@ -168,7 +156,7 @@ import { AuthService } from '../../core/services/auth.service';
           <div class="panel-head">
             <div>
               <h2>Permisos y módulos del Perfil Admin</h2>
-              <p class="sub">Accesos directos a la consola administrativa de spliy.IA.</p>
+              <p class="sub">Accesos directos a la consola administrativa de SplitIA.</p>
             </div>
           </div>
 
@@ -210,27 +198,39 @@ import { AuthService } from '../../core/services/auth.service';
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>Cambiar a un Perfil de Usuario</h2>
-              <p class="sub">Selecciona cualquier usuario para ver la plataforma desde su perfil personal.</p>
+              <h2>Cumplimiento Legal y Privacidad de Sesiones</h2>
+              <p class="sub">Alcance de permisos y protección de datos personales.</p>
             </div>
+            <span class="badge-status badge-info">🔒 Habeas Data</span>
           </div>
 
-          <div style="display: grid; gap: 8px;">
-            @for (u of api.usuarios(); track u.idUsuario) {
-              <div
-                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                (click)="auth.selectUser(u.idUsuario)"
-              >
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
-                  <div>
-                    <strong style="font-size: 13px; display: block;">{{ u.nombre }}</strong>
-                    <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
-                  </div>
-                </div>
-                <span style="font-size: 12px; font-weight: 700; color: var(--accent);">Cambiar a este perfil →</span>
-              </div>
-            }
+          <div style="display: grid; gap: 12px; font-size: 13px; line-height: 1.55;">
+            <div style="padding: 14px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border);">
+              <strong style="display: block; margin-bottom: 4px; color: var(--success);">
+                ✓ Acceso total a la data operativa y financiera
+              </strong>
+              <span style="color: var(--muted); font-size: 12px;">
+                El Perfil de Administrador tiene visibilidad y control sin restricciones sobre todas las cuentas registradas, divisiones, transacciones, auditoría y directorio general en SQL Server.
+              </span>
+            </div>
+
+            <div style="padding: 14px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border);">
+              <strong style="display: block; margin-bottom: 4px; color: var(--warning);">
+                🔒 Prohibición de suplantación de perfiles privados
+              </strong>
+              <span style="color: var(--muted); font-size: 12px;">
+                Por normativas legales de privacidad, el Administrador no puede entrar directamente a la vista ni al perfil privado de un usuario sin autenticarse con el correo y contraseña del titular.
+              </span>
+            </div>
+
+            <button
+              class="btn-outline"
+              type="button"
+              style="width: 100%; margin-top: 4px;"
+              (click)="auth.openAuthModal('switch')"
+            >
+              🔄 Cambiar de cuenta (Requiere correo y contraseña)
+            </button>
           </div>
         </section>
       </div>
@@ -443,7 +443,7 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="panel-head">
               <div>
                 <h2>Información personal y seguridad</h2>
-                <p class="sub">Los cambios se guardan directamente en tu cuenta de spliy.IA.</p>
+                <p class="sub">Los cambios se guardan directamente en tu cuenta de SplitIA.</p>
               </div>
             </div>
 
@@ -488,35 +488,24 @@ import { AuthService } from '../../core/services/auth.service';
           <section class="panel">
             <div class="panel-head">
               <div>
-                <h2>Cambiar de sesión</h2>
-                <p class="sub">Selecciona otra cuenta o registra un usuario nuevo.</p>
+                <h2>Privacidad y cambio de cuenta</h2>
+                <p class="sub">Tu cuenta es privada. Solo tú puedes ver las cuentas donde participas.</p>
               </div>
-              <button class="btn-outline btn-sm" type="button" (click)="auth.openAuthModal('register')">
-                + Nuevo usuario
-              </button>
+              <span class="badge-status badge-success">🔒 Protegida</span>
             </div>
 
-            <div style="display: grid; gap: 9px;">
-              @for (u of api.usuarios(); track u.idUsuario) {
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                  [style.border-color]="auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
-                  (click)="auth.selectUser(u.idUsuario)"
-                >
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
-                    <div>
-                      <strong style="font-size: 13px; display: block;">{{ u.nombre }}</strong>
-                      <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
-                    </div>
-                  </div>
-                  @if (auth.currentUser().idUsuario === u.idUsuario) {
-                    <span class="badge-status badge-success">Sesión actual</span>
-                  } @else {
-                    <span style="font-size: 12px; font-weight: 700; color: var(--accent);">Iniciar sesión →</span>
-                  }
-                </div>
-              }
+            <div style="display: grid; gap: 12px;">
+              <div style="padding: 14px; border-radius: 12px; background: var(--surface-alt); border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); line-height: 1.5;">
+                Por seguridad, para cambiar a otra cuenta de usuario o al perfil de Administrador es obligatorio ingresar el <b>correo electrónico</b> y la <b>contraseña</b> correspondientes.
+              </div>
+
+              <button class="btn-primary" type="button" (click)="auth.openAuthModal('switch')">
+                🔄 Cambiar de cuenta con correo y contraseña
+              </button>
+
+              <button class="btn-outline" type="button" (click)="auth.openAuthModal('register')">
+                + Registrar un usuario nuevo
+              </button>
             </div>
           </section>
         </div>
@@ -662,11 +651,15 @@ export class UserPerfilComponent {
 
   guardarPerfil(): void {
     const u = this.auth.currentUser();
+    const correoLimpio = this.correo.trim();
+    if (this.password.trim()) {
+      this.auth.saveUserPassword(correoLimpio, this.password.trim());
+    }
     this.api
       .updateUsuario(u.idUsuario, {
         idUsuario: u.idUsuario,
         nombre: this.nombre.trim(),
-        correo: this.correo.trim(),
+        correo: correoLimpio,
         telefono: this.telefono.trim() || null,
         passwordHash: this.password ? `HASH_${btoa(this.password)}` : 'HASH_UPDATED_2026'
       })

@@ -18,20 +18,29 @@ namespace ApiCQRS.Repository.Implements
 
         public async Task<Cuenta> Add(Cuenta cuenta)
         {
+            cuenta.Categoria = string.IsNullOrWhiteSpace(cuenta.Categoria) ? "General" : cuenta.Categoria.Trim();
+            cuenta.Estado = string.IsNullOrWhiteSpace(cuenta.Estado) ? "ACTIVA" : cuenta.Estado.Trim().ToUpperInvariant();
+
             const string sql = @"
                 INSERT INTO dbo.Cuenta
                 (
                     id_usuario_pagador,
                     descripcion,
                     monto_total,
-                    fecha
+                    fecha,
+                    categoria,
+                    estado,
+                    notas
                 )
                 VALUES
                 (
                     @IdUsuarioPagador,
                     @Descripcion,
                     @MontoTotal,
-                    @Fecha
+                    @Fecha,
+                    @Categoria,
+                    @Estado,
+                    @Notas
                 );
 
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
@@ -45,13 +54,19 @@ namespace ApiCQRS.Repository.Implements
 
         public async Task<Cuenta> Update(Cuenta cuenta)
         {
+            cuenta.Categoria = string.IsNullOrWhiteSpace(cuenta.Categoria) ? "General" : cuenta.Categoria.Trim();
+            cuenta.Estado = string.IsNullOrWhiteSpace(cuenta.Estado) ? "ACTIVA" : cuenta.Estado.Trim().ToUpperInvariant();
+
             const string sql = @"
                 UPDATE dbo.Cuenta
                 SET
                     id_usuario_pagador = @IdUsuarioPagador,
                     descripcion = @Descripcion,
                     monto_total = @MontoTotal,
-                    fecha = @Fecha
+                    fecha = @Fecha,
+                    categoria = @Categoria,
+                    estado = @Estado,
+                    notas = @Notas
                 WHERE id_cuenta = @IdCuenta;
             ";
 

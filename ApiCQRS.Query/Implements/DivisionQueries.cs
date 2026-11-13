@@ -28,7 +28,8 @@ namespace ApiCQRS.Query.Implements
                     estado AS Estado,
                     tipo_pago AS TipoPago,
                     referencia_pago AS ReferenciaPago,
-                    fecha_pago AS FechaPago
+                    fecha_pago AS FechaPago,
+                    notas AS Notas
                 FROM dbo.Division;
             ";
 
@@ -46,7 +47,8 @@ namespace ApiCQRS.Query.Implements
                     estado AS Estado,
                     tipo_pago AS TipoPago,
                     referencia_pago AS ReferenciaPago,
-                    fecha_pago AS FechaPago
+                    fecha_pago AS FechaPago,
+                    notas AS Notas
                 FROM dbo.Division
                 WHERE id_division = @IdDivision;
             ";
@@ -68,7 +70,8 @@ namespace ApiCQRS.Query.Implements
                     estado AS Estado,
                     tipo_pago AS TipoPago,
                     referencia_pago AS ReferenciaPago,
-                    fecha_pago AS FechaPago
+                    fecha_pago AS FechaPago,
+                    notas AS Notas
                 FROM dbo.Division
                 WHERE id_cuenta = @IdCuenta;
             ";
@@ -90,7 +93,8 @@ namespace ApiCQRS.Query.Implements
                     estado AS Estado,
                     tipo_pago AS TipoPago,
                     referencia_pago AS ReferenciaPago,
-                    fecha_pago AS FechaPago
+                    fecha_pago AS FechaPago,
+                    notas AS Notas
                 FROM dbo.Division
                 WHERE id_usuario = @IdUsuario;
             ";

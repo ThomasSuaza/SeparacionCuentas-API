@@ -11,7 +11,7 @@ import { Division, EstadoDivision } from '../../core/models/api.models';
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">TRANSACCIONES Y RECAUDO · SPLIY.IA</div>
+        <div class="eyebrow">TRANSACCIONES Y RECAUDO · SPLITIA</div>
         <h1 class="page-title">Centro de Transacciones y Pagos</h1>
         <p class="intro">
           Monitorea todas las transacciones procesadas, comprobantes de transferencia y cobros pendientes por participante.

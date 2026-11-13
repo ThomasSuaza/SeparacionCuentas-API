@@ -18,6 +18,9 @@ export interface Usuario {
   correo: string;
   passwordHash: string;
   telefono?: string | null;
+  rol?: 'ADMIN' | 'USUARIO';
+  activo?: boolean;
+  fechaRegistro?: string;
 }
 
 /**
@@ -28,6 +31,9 @@ export interface UsuarioResponse {
   nombre: string;
   correo: string;
   telefono?: string | null;
+  rol?: 'ADMIN' | 'USUARIO';
+  activo?: boolean;
+  fechaRegistro?: string;
 }
 
 /**
@@ -39,6 +45,9 @@ export interface Cuenta {
   descripcion: string;
   montoTotal: number;
   fecha: string;
+  categoria?: string;
+  estado?: 'ACTIVA' | 'CERRADA' | 'ANULADA';
+  notas?: string | null;
 }
 
 /**
@@ -53,6 +62,33 @@ export interface Division {
   tipoPago?: string | null;
   referenciaPago?: string | null;
   fechaPago?: string | null;
+  notas?: string | null;
+}
+
+export interface MetodoPagoUsuario {
+  idMetodo: number;
+  idUsuario: number;
+  entidad: string;
+  numeroCuenta: string;
+  titular: string;
+  esPrincipal: boolean;
+  fechaCreacion?: string;
+}
+
+export interface NotificacionUsuario {
+  idNotificacion: number;
+  idUsuario: number;
+  idCuenta?: number | null;
+  titulo: string;
+  mensaje: string;
+  leida: boolean;
+  fechaCreacion: string;
+}
+
+export interface LoginResponse {
+  autenticado: boolean;
+  mensaje: string;
+  usuario?: UsuarioResponse | null;
 }
 
 /**

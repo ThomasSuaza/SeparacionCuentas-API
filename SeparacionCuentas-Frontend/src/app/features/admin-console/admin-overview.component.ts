@@ -25,7 +25,7 @@ export interface ActividadRecienteItem {
   template: `
     <div class="heading-row">
       <div>
-        <div class="eyebrow">CONSOLA EJECUTIVA · SPLIY.IA</div>
+        <div class="eyebrow">CONSOLA EJECUTIVA · SPLITIA</div>
         <h1 class="page-title">Panel de Administración</h1>
         <p class="intro">
           Monitoreo en tiempo real de cuentas compartidas, transacciones procesadas, recaudo y actividad reciente.

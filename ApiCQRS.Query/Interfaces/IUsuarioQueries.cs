@@ -1,4 +1,5 @@
-﻿using ApiCQRS.Models.DTOs;
+﻿using ApiCQRS.Models;
+using ApiCQRS.Models.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -9,6 +10,8 @@ namespace ApiCQRS.Query.Interfaces
         Task<IEnumerable<UsuarioResponse>> GetAll();
 
         Task<UsuarioResponse?> Get(int id);
+
+        Task<Usuario?> GetByCorreo(string correo);
 
         Task<IEnumerable<UsuarioResponse>> GetParticipantesCuenta(int idCuenta);
     }

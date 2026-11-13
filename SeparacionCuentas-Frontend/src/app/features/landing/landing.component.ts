@@ -15,12 +15,12 @@ import { ThemeService } from '../../core/services/theme.service';
       <!-- Hero Principal -->
       <section class="panel" style="padding: clamp(22px, 4vw, 34px); position: relative; overflow: hidden;">
         <div style="max-width: 740px; position: relative; z-index: 1;">
-          <div class="eyebrow">SPLIY.IA · CUENTAS COMPARTIDAS</div>
+          <div class="eyebrow">SPLITIA · CUENTAS COMPARTIDAS</div>
           <h1 class="page-title" style="font-size: clamp(26px, 3.4vw, 40px); margin-bottom: 12px;">
             Divide cuentas grupales sin discusiones ni cálculos manuales.
           </h1>
           <p class="intro" style="font-size: 14px; max-width: 620px; margin-bottom: 22px;">
-            Inicia sesión o regístrate en <b>spliy.IA</b> para añadir nuevas cuentas, dividir gastos entre amigos y llevar el control en tiempo real de quién ha pagado.
+            Inicia sesión o regístrate en <b>SplitIA</b> para añadir nuevas cuentas, dividir gastos entre amigos y llevar el control en tiempo real de quién ha pagado.
           </p>
 
           <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -51,8 +51,8 @@ import { ThemeService } from '../../core/services/theme.service';
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>Cuentas de usuario registradas</h2>
-              <p class="sub">Selecciona tu perfil para entrar directamente a tus cuentas y pagos.</p>
+              <h2>Comunidad registrada en SplitIA</h2>
+              <p class="sub">Haz clic en un correo para autocompletarlo e ingresa tu contraseña a la derecha.</p>
             </div>
             <span class="pill">{{ api.usuarios().length }} usuarios</span>
           </div>
@@ -61,8 +61,8 @@ import { ThemeService } from '../../core/services/theme.service';
             @for (u of api.usuarios(); track u.idUsuario) {
               <div
                 style="border: 1px solid var(--border); background: var(--surface-alt); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: all 0.15s ease;"
-                [style.border-color]="auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
-                (click)="loginAsUser(u.idUsuario)"
+                [style.border-color]="auth.isLoggedIn() && !auth.isAdminSession() && auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
+                (click)="seleccionarCorreoParaLogin(u.correo)"
               >
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <div class="person-bubble">{{ api.getIniciales(u.nombre) }}</div>
@@ -72,11 +72,11 @@ import { ThemeService } from '../../core/services/theme.service';
                   </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px solid var(--border); font-size: 11px;">
-                  <span style="color: var(--muted);">{{ u.telefono || 'Sin teléfono' }}</span>
-                  @if (auth.currentUser().idUsuario === u.idUsuario) {
+                  <span style="color: var(--muted);">🔒 Requiere contraseña</span>
+                  @if (auth.isLoggedIn() && !auth.isAdminSession() && auth.currentUser().idUsuario === u.idUsuario) {
                     <span class="badge-status badge-success">Activa</span>
                   } @else {
-                    <span style="color: var(--accent); font-weight: 700;">Iniciar sesión →</span>
+                    <span style="color: var(--accent); font-weight: 700;">Usar correo →</span>
                   }
                 </div>
               </div>
@@ -172,39 +172,64 @@ export class LandingComponent {
     this.router.navigate(['/usuario/cuentas']);
   }
 
-  loginAsUser(idUsuario: number): void {
-    this.auth.selectUser(idUsuario);
-    this.auth.setRole('user', true);
-    this.router.navigate(['/usuario/perfil']);
+  seleccionarCorreoParaLogin(correo: string): void {
+    this.correoLogin = correo;
+    this.tab.set('login');
   }
 
   iniciarSesionCorreo(): void {
-    if (!this.correoLogin.trim()) return;
-    this.auth.loginWithCredentials(this.correoLogin, this.passwordLogin).subscribe(() => {
+    if (!this.correoLogin.trim() || !this.passwordLogin.trim()) return;
+    this.auth.loginWithCredentials(this.correoLogin, this.passwordLogin).subscribe(user => {
+      if (!user) return;
       this.correoLogin = '';
       this.passwordLogin = '';
-      this.auth.setRole('user', true);
-      this.router.navigate(['/usuario/perfil']);
+      if (this.auth.isAdminSession() || user.rol === 'ADMIN') {
+        this.router.navigate(['/admin/resumen']);
+      } else {
+        this.router.navigate(['/usuario/panel']);
+      }
     });
   }
 
   registrarUsuario(): void {
-    if (!this.nuevoNombre.trim() || !this.nuevoCorreo.trim()) return;
+    if (!this.nuevoNombre.trim() || !this.nuevoCorreo.trim() || !this.nuevoPassword.trim()) return;
+    const correoLimpio = this.nuevoCorreo.trim();
+    const passLimpia = this.nuevoPassword.trim();
     this.api
-      .createUsuario({
+      .registerBackend({
         nombre: this.nuevoNombre.trim(),
-        correo: this.nuevoCorreo.trim(),
+        correo: correoLimpio,
         telefono: this.nuevoTelefono.trim() || null,
-        passwordHash: this.nuevoPassword ? `HASH_${btoa(this.nuevoPassword)}` : 'HASH_DEFAULT_2026'
+        passwordHash: passLimpia
       })
-      .subscribe(created => {
-        this.nuevoNombre = '';
-        this.nuevoCorreo = '';
-        this.nuevoTelefono = '';
-        this.nuevoPassword = '';
-        this.auth.selectUser(created.idUsuario);
-        this.auth.setRole('user', true);
-        this.router.navigate(['/usuario/cuentas']);
+      .subscribe({
+        next: created => {
+          this.auth.saveUserPassword(correoLimpio, passLimpia);
+          this.nuevoNombre = '';
+          this.nuevoCorreo = '';
+          this.nuevoTelefono = '';
+          this.nuevoPassword = '';
+          this.auth.selectUser(created.idUsuario);
+          this.router.navigate(['/usuario/cuentas']);
+        },
+        error: () => {
+          this.api
+            .createUsuario({
+              nombre: this.nuevoNombre.trim(),
+              correo: correoLimpio,
+              telefono: this.nuevoTelefono.trim() || null,
+              passwordHash: `HASH_${btoa(passLimpia)}`
+            })
+            .subscribe(created => {
+              this.auth.saveUserPassword(correoLimpio, passLimpia);
+              this.nuevoNombre = '';
+              this.nuevoCorreo = '';
+              this.nuevoTelefono = '';
+              this.nuevoPassword = '';
+              this.auth.selectUser(created.idUsuario);
+              this.router.navigate(['/usuario/cuentas']);
+            });
+        }
       });
   }
 }

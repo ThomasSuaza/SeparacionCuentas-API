@@ -27,8 +27,12 @@ namespace ApiCQRS.Query.Implements
                     id_usuario_pagador AS IdUsuarioPagador,
                     descripcion AS Descripcion,
                     monto_total AS MontoTotal,
-                    fecha AS Fecha
-                FROM dbo.Cuenta;";
+                    fecha AS Fecha,
+                    categoria AS Categoria,
+                    estado AS Estado,
+                    notas AS Notas
+                FROM dbo.Cuenta
+                ORDER BY fecha DESC;";
 
             return await _db.QueryAsync<Cuenta>(sql);
         }
@@ -42,7 +46,10 @@ namespace ApiCQRS.Query.Implements
                     id_usuario_pagador AS IdUsuarioPagador,
                     descripcion AS Descripcion,
                     monto_total AS MontoTotal,
-                    fecha AS Fecha
+                    fecha AS Fecha,
+                    categoria AS Categoria,
+                    estado AS Estado,
+                    notas AS Notas
                 FROM dbo.Cuenta
                 WHERE id_cuenta = @IdCuenta;";
 
@@ -65,7 +72,10 @@ namespace ApiCQRS.Query.Implements
                     id_usuario_pagador AS IdUsuarioPagador,
                     descripcion AS Descripcion,
                     monto_total AS MontoTotal,
-                    fecha AS Fecha
+                    fecha AS Fecha,
+                    categoria AS Categoria,
+                    estado AS Estado,
+                    notas AS Notas
                 FROM dbo.Cuenta
                 WHERE id_usuario_pagador = @IdUsuario
                 ORDER BY fecha DESC;";

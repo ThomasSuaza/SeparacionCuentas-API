@@ -33,7 +33,7 @@ interface ParticipanteDraft {
       </button>
     </div>
 
-    <!-- Filtros de cuentas -->
+    <!-- Filtros de mis cuentas privadas -->
     <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;">
       <button
         type="button"
@@ -41,7 +41,7 @@ interface ParticipanteDraft {
         [style.border-color]="filtro() === 'todas' ? 'var(--accent)' : 'var(--border)'"
         (click)="filtro.set('todas')"
       >
-        Todas ({{ api.cuentas().length }})
+        Mis cuentas ({{ auth.misCuentasUsuario().length }})
       </button>
       <button
         type="button"
@@ -57,7 +57,7 @@ interface ParticipanteDraft {
         [style.border-color]="filtro() === 'participo' ? 'var(--accent)' : 'var(--border)'"
         (click)="filtro.set('participo')"
       >
-        Donde participo
+        Donde soy participante
       </button>
     </div>
 
@@ -546,17 +546,15 @@ export class UserCuentasComponent {
 
   readonly cuentasFiltradas = computed(() => {
     const uid = this.auth.currentUser().idUsuario;
-    const todas = this.api.cuentas();
+    // Aislamiento estricto: un usuario solo ve las cuentas donde es pagador o participante
+    const misCuentas = this.auth.misCuentasUsuario();
     if (this.filtro() === 'pagadas_por_mi') {
-      return todas.filter(c => c.idUsuarioPagador === uid);
+      return misCuentas.filter(c => c.idUsuarioPagador === uid);
     }
     if (this.filtro() === 'participo') {
-      const misCuentasDiv = new Set(
-        this.api.divisiones().filter(d => d.idUsuario === uid).map(d => d.idCuenta)
-      );
-      return todas.filter(c => c.idUsuarioPagador === uid || misCuentasDiv.has(c.idCuenta));
+      return misCuentas.filter(c => c.idUsuarioPagador !== uid);
     }
-    return todas;
+    return misCuentas;
   });
 
   obtenerDivisionesDeCuenta(idCuenta: number): Division[] {
@@ -605,14 +603,14 @@ export class UserCuentasComponent {
     }
     const nombre = this.rapidoNombre.trim();
     const correo =
-      this.rapidoCorreo.trim() || `${nombre.toLowerCase().replace(/\s+/g, '.')}@spliy.ia`;
+      this.rapidoCorreo.trim() || `${nombre.toLowerCase().replace(/\s+/g, '.')}@splitia.app`;
 
     this.api
       .createUsuario({
         nombre,
         correo,
         telefono: '300 000 0000',
-        passwordHash: 'HASH_RAPIDO_2026'
+        passwordHash: '123456'
       })
       .subscribe(creado => {
         this.rapidoNombre = '';
@@ -725,14 +723,14 @@ export class UserCuentasComponent {
       const nombre = this.nuevoUsuarioNombre.trim();
       const correo =
         this.nuevoUsuarioCorreo.trim() ||
-        `${nombre.toLowerCase().replace(/\s+/g, '.')}@spliy.ia`;
+        `${nombre.toLowerCase().replace(/\s+/g, '.')}@splitia.app`;
 
       this.api
         .createUsuario({
           nombre,
           correo,
           telefono: this.nuevoUsuarioTelefono.trim() || null,
-          passwordHash: 'HASH_NUEVO_PARTICIPANTE_2026'
+          passwordHash: '123456'
         })
         .subscribe(usuarioCreado => {
           this.api

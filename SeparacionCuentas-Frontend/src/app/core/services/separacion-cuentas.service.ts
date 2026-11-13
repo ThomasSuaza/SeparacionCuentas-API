@@ -11,7 +11,10 @@ import {
   DbTestResponse,
   ConsumoItem,
   AuditLogEntry,
-  EstadoDistribucion
+  EstadoDistribucion,
+  LoginResponse,
+  MetodoPagoUsuario,
+  NotificacionUsuario
 } from '../models/api.models';
 import { environment } from '../../../environments/environment';
 import { ToastService } from './toast.service';
@@ -21,12 +24,14 @@ import { ToastService } from './toast.service';
 })
 export class SeparacionCuentasService {
   private readonly STORAGE_KEYS = {
-    API_URL: 'slit_ia_api_url',
-    USUARIOS: 'slit_ia_db_usuarios',
-    CUENTAS: 'slit_ia_db_cuentas',
-    DIVISIONES: 'slit_ia_db_divisiones',
-    CONSUMOS: 'slit_ia_db_consumos',
-    AUDIT: 'slit_ia_db_audit'
+    API_URL: 'splitia_api_url',
+    USUARIOS: 'splitia_db_usuarios',
+    CUENTAS: 'splitia_db_cuentas',
+    DIVISIONES: 'splitia_db_divisiones',
+    CONSUMOS: 'splitia_db_consumos',
+    AUDIT: 'splitia_db_audit',
+    METODOS: 'splitia_db_metodos',
+    NOTIFS: 'splitia_db_notifs'
   };
 
   readonly apiUrl = signal<string>(this.loadSavedApiUrl());
@@ -40,6 +45,8 @@ export class SeparacionCuentasService {
   readonly divisiones = signal<Division[]>([]);
   readonly consumos = signal<ConsumoItem[]>([]);
   readonly auditLogs = signal<AuditLogEntry[]>([]);
+  readonly metodosPago = signal<MetodoPagoUsuario[]>([]);
+  readonly notificaciones = signal<NotificacionUsuario[]>([]);
 
   // KPIs calculados globalmente
   readonly volumenTotalCuentas = computed(() =>
@@ -115,7 +122,8 @@ export class SeparacionCuentasService {
       forkJoin({
         usuarios: this.getUsuarios(),
         cuentas: this.getCuentas(),
-        divisiones: this.getDivisiones()
+        divisiones: this.getDivisiones(),
+        items: this.loadItemsConsumo()
       }).subscribe({
         next: () => {
           this.isLoading.set(false);
@@ -125,6 +133,101 @@ export class SeparacionCuentasService {
         }
       });
     });
+  }
+
+  loginBackend(correo: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl()}/api/Auth/login`, {
+      correo,
+      password
+    });
+  }
+
+  registerBackend(payload: Omit<Usuario, 'idUsuario'>): Observable<UsuarioResponse> {
+    return this.http.post<UsuarioResponse>(`${this.apiUrl()}/api/Auth/register`, {
+      idUsuario: 0,
+      ...payload
+    }).pipe(
+      tap(userResp => {
+        const updated = [...this.usuarios(), userResp];
+        this.usuarios.set(updated);
+        this.saveLocal(this.STORAGE_KEYS.USUARIOS, updated);
+        this.addAudit('Usuario', 'POST', '/api/Auth/register', `Usuario registrado: ${userResp.nombre}`, 'API .NET');
+        this.toast.show(`Usuario "${userResp.nombre}" registrado en SplitIA.`, 'success');
+      })
+    );
+  }
+
+  loadItemsConsumo(): Observable<ConsumoItem[]> {
+    return this.http.get<Array<{ idItem: number; idCuenta: number; concepto: string; detalle?: string; valor: number; icono?: string }>>(`${this.apiUrl()}/api/Sistema/items`).pipe(
+      map(rows =>
+        rows.map(r => ({
+          id: `SQL-${r.idItem}`,
+          idCuenta: r.idCuenta,
+          concepto: r.concepto,
+          detalle: r.detalle || '',
+          valor: Number(r.valor),
+          icono: r.icono || '🧾'
+        }))
+      ),
+      tap(items => {
+        if (items.length > 0) {
+          this.consumos.set(items);
+          this.saveLocal(this.STORAGE_KEYS.CONSUMOS, items);
+        }
+      }),
+      catchError(() => of(this.consumos()))
+    );
+  }
+
+  loadMetodosPagoUsuario(idUsuario: number): Observable<MetodoPagoUsuario[]> {
+    return this.http.get<MetodoPagoUsuario[]>(`${this.apiUrl()}/api/Sistema/metodos-pago/${idUsuario}`).pipe(
+      tap(list => {
+        this.metodosPago.set(list);
+        this.saveLocal(this.STORAGE_KEYS.METODOS, list);
+      }),
+      catchError(() => {
+        const fallback = this.loadLocal<MetodoPagoUsuario[]>(this.STORAGE_KEYS.METODOS, []);
+        return of(fallback);
+      })
+    );
+  }
+
+  addMetodoPagoUsuario(metodo: Omit<MetodoPagoUsuario, 'idMetodo'>): Observable<MetodoPagoUsuario> {
+    return this.http.post<MetodoPagoUsuario>(`${this.apiUrl()}/api/Sistema/metodos-pago`, {
+      idMetodo: 0,
+      ...metodo
+    }).pipe(
+      tap(created => {
+        const current = metodo.esPrincipal
+          ? this.metodosPago().map(m => ({ ...m, esPrincipal: false }))
+          : [...this.metodosPago()];
+        const updated = [...current, created];
+        this.metodosPago.set(updated);
+        this.saveLocal(this.STORAGE_KEYS.METODOS, updated);
+        this.toast.show(`Medio de cobro ${created.entidad} guardado.`, 'success');
+      }),
+      catchError(() => {
+        const created: MetodoPagoUsuario = {
+          idMetodo: Date.now(),
+          ...metodo
+        };
+        const updated = [...this.metodosPago(), created];
+        this.metodosPago.set(updated);
+        this.saveLocal(this.STORAGE_KEYS.METODOS, updated);
+        this.toast.show(`Medio de cobro ${created.entidad} guardado localmente.`, 'success');
+        return of(created);
+      })
+    );
+  }
+
+  loadNotificacionesUsuario(idUsuario: number): Observable<NotificacionUsuario[]> {
+    return this.http.get<NotificacionUsuario[]>(`${this.apiUrl()}/api/Sistema/notificaciones/${idUsuario}`).pipe(
+      tap(list => {
+        this.notificaciones.set(list);
+        this.saveLocal(this.STORAGE_KEYS.NOTIFS, list);
+      }),
+      catchError(() => of(this.notificaciones()))
+    );
   }
 
   // ==========================================================================
@@ -701,20 +804,50 @@ export class SeparacionCuentasService {
   }
 
   // ==========================================================================
-  // ÍTEMS DE CONSUMO POR CUENTA (DESGLOSE DETALLADO DEL PROTOTIPO SLIT.IA)
+  // ÍTEMS DE CONSUMO POR CUENTA (SINCRONIZADO CON SQL SERVER dbo.ItemConsumo)
   // ==========================================================================
   getConsumosPorCuenta(idCuenta: number): ConsumoItem[] {
     return this.consumos().filter(c => c.idCuenta === idCuenta);
   }
 
   addConsumoItem(item: Omit<ConsumoItem, 'id'>): void {
-    const nuevo: ConsumoItem = {
-      ...item,
-      id: 'ITEM-' + Date.now() + '-' + Math.floor(Math.random() * 999)
-    };
-    const updated = [...this.consumos(), nuevo];
-    this.consumos.set(updated);
-    this.saveLocal(this.STORAGE_KEYS.CONSUMOS, updated);
+    this.http
+      .post<{ idItem: number; idCuenta: number; concepto: string; detalle?: string; valor: number; icono?: string }>(
+        `${this.apiUrl()}/api/Sistema/items`,
+        {
+          idItem: 0,
+          idCuenta: item.idCuenta,
+          concepto: item.concepto,
+          detalle: item.detalle,
+          valor: item.valor,
+          icono: item.icono
+        }
+      )
+      .pipe(
+        catchError(() =>
+          of({
+            idItem: Date.now(),
+            idCuenta: item.idCuenta,
+            concepto: item.concepto,
+            detalle: item.detalle,
+            valor: item.valor,
+            icono: item.icono
+          })
+        )
+      )
+      .subscribe(res => {
+        const nuevo: ConsumoItem = {
+          id: `SQL-${res.idItem}`,
+          idCuenta: res.idCuenta,
+          concepto: res.concepto,
+          detalle: res.detalle || '',
+          valor: Number(res.valor),
+          icono: res.icono || '🧾'
+        };
+        const updated = [...this.consumos(), nuevo];
+        this.consumos.set(updated);
+        this.saveLocal(this.STORAGE_KEYS.CONSUMOS, updated);
+      });
   }
 
   // ==========================================================================
@@ -753,47 +886,55 @@ export class SeparacionCuentasService {
     }
 
     const seedUsuarios: UsuarioResponse[] = [
-      { idUsuario: 1, nombre: 'Thomas Suaza', correo: 'thomas.suaza@splitbill.ai', telefono: '+57 300 412 8901' },
-      { idUsuario: 2, nombre: 'Carolina Mejía', correo: 'carolina.mejia@splitbill.ai', telefono: '+57 311 540 2219' },
-      { idUsuario: 3, nombre: 'Andrés Restrepo', correo: 'andres.restrepo@splitbill.ai', telefono: '+57 315 892 3304' },
-      { idUsuario: 4, nombre: 'Valentina Gómez', correo: 'valentina.gomez@splitbill.ai', telefono: '+57 320 671 9940' },
-      { idUsuario: 5, nombre: 'Miguel Ángel Taborda', correo: 'miguel.taborda@splitbill.ai', telefono: '+57 301 778 4512' },
-      { idUsuario: 6, nombre: 'Jorge Galindo', correo: 'jorge.galindo@splitbill.ai', telefono: '+57 318 334 1120' }
+      { idUsuario: 1, nombre: 'Thomas Suaza', correo: 'thomas@correo.com', telefono: '+57 300 111 2233', rol: 'USUARIO' },
+      { idUsuario: 2, nombre: 'Carolina Mejía', correo: 'carolina.mejia@splitia.app', telefono: '+57 311 540 2219', rol: 'USUARIO' },
+      { idUsuario: 3, nombre: 'Andrés Restrepo', correo: 'andres.restrepo@splitia.app', telefono: '+57 315 892 3304', rol: 'USUARIO' },
+      { idUsuario: 4, nombre: 'Valentina Gómez', correo: 'valentina.gomez@splitia.app', telefono: '+57 320 671 9940', rol: 'USUARIO' },
+      { idUsuario: 5, nombre: 'Miguel Ángel Taborda', correo: 'miguel.taborda@splitia.app', telefono: '+57 301 778 4512', rol: 'USUARIO' },
+      { idUsuario: 6, nombre: 'Jorge Galindo', correo: 'jorge.galindo@splitia.app', telefono: '+57 318 334 1120', rol: 'USUARIO' }
     ];
 
     const seedCuentas: Cuenta[] = [
       {
         idCuenta: 1,
         idUsuarioPagador: 1,
-        descripcion: 'Cena con amigos · Trattoria Napolitana',
+        descripcion: 'Cena con amigos - Trattoria Napolitana',
         montoTotal: 240000,
-        fecha: '2026-10-27T20:15:00'
+        fecha: '2026-10-27T20:15:00',
+        categoria: 'Restaurante',
+        estado: 'ACTIVA'
       },
       {
         idCuenta: 2,
         idUsuarioPagador: 5,
         descripcion: 'Asado de fin de semana en Rionegro',
         montoTotal: 420000,
-        fecha: '2026-11-02T14:30:00'
+        fecha: '2026-11-02T14:30:00',
+        categoria: 'Viajes y Eventos',
+        estado: 'ACTIVA'
       },
       {
         idCuenta: 3,
         idUsuarioPagador: 1,
-        descripcion: 'Suscripción Cloud & Dominio Proyecto SplitBill',
+        descripcion: 'Suscripción Cloud & Dominio SplitIA',
         montoTotal: 180000,
-        fecha: '2026-11-06T09:00:00'
+        fecha: '2026-11-06T09:00:00',
+        categoria: 'Tecnología',
+        estado: 'ACTIVA'
       },
       {
         idCuenta: 4,
         idUsuarioPagador: 2,
         descripcion: 'Brunch de Cumpleaños en El Poblado',
         montoTotal: 315000,
-        fecha: '2026-11-09T11:20:00'
+        fecha: '2026-11-09T11:20:00',
+        categoria: 'Restaurante',
+        estado: 'ACTIVA'
       }
     ];
 
     const seedDivisiones: Division[] = [
-      // Cuenta #1 ($240.000 entre 4 personas = $60.000 c/u - Exactamente igual al prototipo SLIT.IA)
+      // Cuenta #1 ($240.000 entre 4 personas = $60.000 c/u - Datos semilla SplitIA)
       {
         idDivision: 1,
         idCuenta: 1,
@@ -971,7 +1112,7 @@ export class SeparacionCuentasService {
       { id: 'C-6', idCuenta: 2, concepto: 'Guarniciones y Carbón', detalle: 'Arepas, chorizos, guacamole', valor: 105000, icono: 'G' },
       { id: 'C-7', idCuenta: 2, concepto: 'Bebidas y Hielo', detalle: 'Cervezas y gaseosas', valor: 70000, icono: 'B' },
       { id: 'C-8', idCuenta: 3, concepto: 'Azure SQL + App Service', detalle: 'Plan mensual .NET 10', valor: 135000, icono: 'A' },
-      { id: 'C-9', idCuenta: 3, concepto: 'Dominio splitbill.ai', detalle: 'Renovación anual prorrateada', valor: 45000, icono: 'D' },
+      { id: 'C-9', idCuenta: 3, concepto: 'Dominio splitia.app', detalle: 'Renovación anual prorrateada', valor: 45000, icono: 'D' },
       { id: 'C-10', idCuenta: 4, concepto: 'Platos Fuertes Brunch', detalle: '3 Huevos Benedictinos + Waffle', valor: 195000, icono: 'B' },
       { id: 'C-11', idCuenta: 4, concepto: 'Mimosas & Café Especial', detalle: 'Jarra de mimosa + 3 cafés', valor: 120000, icono: 'M' }
     ];

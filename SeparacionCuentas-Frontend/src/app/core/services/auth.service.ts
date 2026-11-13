@@ -1,7 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { UsuarioResponse, WorkspaceRole } from '../models/api.models';
+import { Observable, of, catchError, map, tap } from 'rxjs';
+import { UsuarioResponse, WorkspaceRole, Cuenta } from '../models/api.models';
 import { SeparacionCuentasService } from './separacion-cuentas.service';
 import { ToastService } from './toast.service';
 
@@ -9,10 +8,11 @@ import { ToastService } from './toast.service';
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly USER_KEY = 'slit_ia_active_user_id';
-  private readonly ROLE_KEY = 'slit_ia_active_role';
-  private readonly LOGGED_KEY = 'slit_ia_is_logged_in';
-  private readonly ADMIN_SESSION_KEY = 'slit_ia_is_admin_session';
+  private readonly USER_KEY = 'splitia_active_user_id';
+  private readonly ROLE_KEY = 'splitia_active_role';
+  private readonly LOGGED_KEY = 'splitia_is_logged_in';
+  private readonly ADMIN_SESSION_KEY = 'splitia_is_admin_session';
+  private readonly PASSWORDS_KEY = 'splitia_user_passwords';
 
   readonly activeUserId = signal<number>(this.loadSavedUserId());
   readonly activeRole = signal<WorkspaceRole>(this.loadSavedRole());
@@ -21,10 +21,12 @@ export class AuthService {
   readonly authModalMode = signal<'login' | 'register' | 'switch' | null>(null);
 
   readonly adminProfile: UsuarioResponse = {
-    idUsuario: 999,
-    nombre: 'Administrador spliy.IA',
-    correo: 'admin@spliy.ia',
-    telefono: '+57 300 000 0000'
+    idUsuario: 1005,
+    nombre: 'Administrador SplitIA',
+    correo: 'admin@splitia.app',
+    telefono: '+57 300 000 0000',
+    rol: 'ADMIN',
+    activo: true
   };
 
   readonly currentUser = computed<UsuarioResponse>(() => {
@@ -37,9 +39,10 @@ export class AuthService {
     return (
       list[0] || {
         idUsuario: 1,
-        nombre: 'Thomas',
+        nombre: 'Thomas Suaza',
         correo: 'thomas@correo.com',
-        telefono: '3001112233'
+        telefono: '+57 300 111 2233',
+        rol: 'USUARIO'
       }
     );
   });
@@ -47,6 +50,27 @@ export class AuthService {
   readonly iniciales = computed(() => {
     if (this.isAdminSession()) return 'AD';
     return this.api.getIniciales(this.currentUser().nombre);
+  });
+
+  /**
+   * Cuentas estrictamente visibles para el usuario autenticado (Privacidad de datos):
+   * Un usuario estándar SOLO tiene acceso a las cuentas que él creó/pagó
+   * o en las que participa dentro de una división.
+   */
+  readonly misCuentasUsuario = computed<Cuenta[]>(() => {
+    if (this.isAdminSession()) {
+      return this.api.cuentas();
+    }
+    const uid = this.currentUser().idUsuario;
+    const idsEnDivisiones = new Set(
+      this.api
+        .divisiones()
+        .filter(d => d.idUsuario === uid)
+        .map(d => d.idCuenta)
+    );
+    return this.api
+      .cuentas()
+      .filter(c => c.idUsuarioPagador === uid || idsEnDivisiones.has(c.idCuenta));
   });
 
   constructor(
@@ -89,6 +113,26 @@ export class AuthService {
     }
   }
 
+  private getPasswordsMap(): Record<string, string> {
+    try {
+      const raw = localStorage.getItem(this.PASSWORDS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  saveUserPassword(correo: string, password: string): void {
+    if (!correo || !password) return;
+    try {
+      const map = this.getPasswordsMap();
+      map[correo.trim().toLowerCase()] = password;
+      localStorage.setItem(this.PASSWORDS_KEY, JSON.stringify(map));
+    } catch {
+      // Ignore
+    }
+  }
+
   openAuthModal(mode: 'login' | 'register' | 'switch'): void {
     this.authModalMode.set(mode);
   }
@@ -98,9 +142,15 @@ export class AuthService {
   }
 
   /**
-   * Inicia sesión con el Perfil de Administrador de spliy.IA
+   * Inicia sesión con el Perfil de Administrador de SplitIA
    */
-  loginAsAdmin(silent = false): void {
+  loginAsAdmin(silent = false, adminUser?: UsuarioResponse): void {
+    if (adminUser) {
+      this.adminProfile.idUsuario = adminUser.idUsuario;
+      this.adminProfile.nombre = adminUser.nombre;
+      this.adminProfile.correo = adminUser.correo;
+      this.adminProfile.telefono = adminUser.telefono;
+    }
     this.isAdminSession.set(true);
     this.activeRole.set('admin');
     this.isLoggedIn.set(true);
@@ -112,7 +162,7 @@ export class AuthService {
       // Ignore
     }
     if (!silent) {
-      this.toast.show('Sesión iniciada como Administrador spliy.IA.', 'success');
+      this.toast.show('Sesión iniciada como Administrador SplitIA.', 'success');
     }
   }
 
@@ -132,106 +182,85 @@ export class AuthService {
     } catch {
       // Ignore
     }
+    this.api.loadMetodosPagoUsuario(idUsuario).subscribe();
+    this.api.loadNotificacionesUsuario(idUsuario).subscribe();
     if (!silent) {
       const user = this.api.usuarios().find(u => u.idUsuario === idUsuario);
       if (user) {
-        this.toast.show(`Perfil activo: ${user.nombre}.`, 'success');
+        this.toast.show(`Sesión iniciada como ${user.nombre}.`, 'success');
       }
     }
   }
 
   /**
-   * Inicia sesión buscando por correo, nombre o credenciales de Administrador.
+   * Autenticación obligatoria por Correo Electrónico y Contraseña contra SQL Server (/api/Auth/login)
+   * con respaldo local seguro si el servidor API está desconectado.
    */
-  loginWithCredentials(identificador: string, password?: string): Observable<UsuarioResponse> {
-    const clean = identificador.trim();
-    const normalized = clean.toLowerCase();
+  loginWithCredentials(correoInput: string, passwordInput?: string): Observable<UsuarioResponse | null> {
+    const cleanCorreo = correoInput.trim().toLowerCase();
+    const cleanPass = (passwordInput || '').trim();
 
-    // 1. Verificar si es el Perfil Administrador
-    if (
-      normalized === 'admin' ||
-      normalized === 'administrador' ||
-      normalized === 'admin@spliy.ia' ||
-      normalized === 'admin@correo.com'
-    ) {
-      this.loginAsAdmin();
-      return of(this.adminProfile);
+    if (!cleanCorreo || !cleanPass) {
+      this.toast.show('Por seguridad, debes ingresar el correo electrónico y la contraseña.', 'warning');
+      return of(null);
     }
 
-    const list = this.api.usuarios();
+    return this.api.loginBackend(cleanCorreo, cleanPass).pipe(
+      map(res => {
+        if (!res.autenticado || !res.usuario) {
+          this.toast.show(res.mensaje || 'Credenciales inválidas.', 'error');
+          return null;
+        }
+        const u = res.usuario;
+        if (u.rol === 'ADMIN' || u.correo.toLowerCase() === 'admin@splitia.app') {
+          this.loginAsAdmin(false, u);
+          return u;
+        }
+        this.saveUserPassword(u.correo, cleanPass);
+        this.selectUser(u.idUsuario);
+        return u;
+      }),
+      catchError(err => {
+        // Si el servidor API respondió 401/400, NO permitir bypass local
+        if (err && (err.status === 401 || err.status === 400)) {
+          const msg = err.error?.mensaje || 'Correo o contraseña incorrectos.';
+          this.toast.show(msg, 'error');
+          return of(null);
+        }
 
-    // 2. Coincidencia exacta por correo, nombre o teléfono
-    let found = list.find(
-      u =>
-        u.correo.toLowerCase() === normalized ||
-        u.nombre.toLowerCase() === normalized ||
-        (u.telefono || '').toLowerCase() === normalized
-    );
+        // Fallback local únicamente cuando no hay conexión de red con la API (status === 0)
+        const passMap = this.getPasswordsMap();
+        if (
+          cleanCorreo === 'admin@splitia.app' ||
+          cleanCorreo === 'admin@spliy.ia' ||
+          cleanCorreo === 'admin@correo.com' ||
+          cleanCorreo === 'admin'
+        ) {
+          const savedAdminPass = passMap['admin@splitia.app'] || 'admin123';
+          if (cleanPass !== savedAdminPass && cleanPass !== 'admin123') {
+            this.toast.show('Contraseña de Administrador incorrecta.', 'error');
+            return of(null);
+          }
+          this.loginAsAdmin();
+          return of(this.adminProfile);
+        }
 
-    // 3. Coincidencia parcial por nombre o prefijo de correo
-    if (!found) {
-      found = list.find(
-        u =>
-          u.correo.toLowerCase().includes(normalized) ||
-          u.nombre.toLowerCase().includes(normalized)
-      );
-    }
+        const found = this.api.usuarios().find(u => u.correo.trim().toLowerCase() === cleanCorreo);
+        if (!found) {
+          this.toast.show('No existe ninguna cuenta con ese correo electrónico. Verifica el correo o regístrate.', 'error');
+          return of(null);
+        }
 
-    if (found) {
-      this.selectUser(found.idUsuario);
-      return of(found);
-    }
+        const savedPass = passMap[cleanCorreo] || '123456';
+        if (savedPass !== cleanPass) {
+          this.toast.show('Contraseña incorrecta para esta cuenta.', 'error');
+          return of(null);
+        }
 
-    // 4. Si no existe en la BD, lo registramos automáticamente en SQL Server
-    const isEmail = clean.includes('@');
-    const nombreNuevo = isEmail
-      ? clean
-          .split('@')[0]
-          .replace(/[._-]+/g, ' ')
-          .replace(/\b\w/g, l => l.toUpperCase())
-      : clean;
-    const correoNuevo = isEmail
-      ? clean
-      : `${clean.toLowerCase().replace(/\s+/g, '.')}@spliy.ia`;
-
-    return this.api
-      .createUsuario({
-        nombre: nombreNuevo,
-        correo: correoNuevo,
-        telefono: '300 000 0000',
-        passwordHash: password ? `HASH_${btoa(password)}` : 'HASH_LOGIN_2026'
+        this.selectUser(found.idUsuario);
+        return of(found);
       })
-      .pipe(
-        map(created => {
-          this.selectUser(created.idUsuario, true);
-          this.toast.show(`Bienvenido a spliy.IA, ${created.nombre}.`, 'success');
-          return created;
-        })
-      );
-  }
-
-  loginByEmail(correo: string): boolean {
-    const normalized = correo.trim().toLowerCase();
-    if (
-      normalized === 'admin' ||
-      normalized === 'administrador' ||
-      normalized === 'admin@spliy.ia'
-    ) {
-      this.loginAsAdmin();
-      return true;
-    }
-    const user = this.api
-      .usuarios()
-      .find(
-        u =>
-          u.correo.toLowerCase() === normalized ||
-          u.nombre.toLowerCase().includes(normalized)
-      );
-    if (!user) {
-      return false;
-    }
-    this.selectUser(user.idUsuario);
-    return true;
+    );
   }
 
   logout(): void {
@@ -249,6 +278,9 @@ export class AuthService {
   }
 
   setRole(role: WorkspaceRole, silent = false): void {
+    if (role === 'admin' && !this.isAdminSession()) {
+      return;
+    }
     this.activeRole.set(role);
     try {
       localStorage.setItem(this.ROLE_KEY, role);

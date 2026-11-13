@@ -213,7 +213,7 @@ export class UserPagosComponent {
 
   copiarComprobante(d: Division): void {
     const c = this.obtenerCuenta(d.idCuenta);
-    const texto = `✅ Comprobante spliy.IA\nCuenta: ${c?.descripcion || d.idCuenta}\nParticipante: ${this.auth.currentUser().nombre}\nValor Pagado: $${d.monto.toLocaleString('es-CO')} COP\nMétodo: ${d.tipoPago || 'Digital'} (${d.referenciaPago || 'N/A'})`;
+    const texto = `✅ Comprobante SplitIA\nCuenta: ${c?.descripcion || d.idCuenta}\nParticipante: ${this.auth.currentUser().nombre}\nValor Pagado: $${d.monto.toLocaleString('es-CO')} COP\nMétodo: ${d.tipoPago || 'Digital'} (${d.referenciaPago || 'N/A'})`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(texto);
     }

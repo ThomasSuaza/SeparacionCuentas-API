@@ -18,20 +18,30 @@ namespace ApiCQRS.Repository.Implements
 
         public async Task<Usuario> Add(Usuario usuario)
         {
+            usuario.Rol = string.IsNullOrWhiteSpace(usuario.Rol) ? "USUARIO" : usuario.Rol.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(usuario.PasswordHash))
+            {
+                usuario.PasswordHash = "123456";
+            }
+
             const string sql = @"
                 INSERT INTO dbo.Usuario
                 (
                     nombre,
                     correo,
                     password_hash,
-                    telefono
+                    telefono,
+                    rol,
+                    activo
                 )
                 VALUES
                 (
                     @Nombre,
                     @Correo,
                     @PasswordHash,
-                    @Telefono
+                    @Telefono,
+                    @Rol,
+                    @Activo
                 );
 
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
@@ -50,7 +60,12 @@ namespace ApiCQRS.Repository.Implements
                 SET
                     nombre = @Nombre,
                     correo = @Correo,
-                    password_hash = @PasswordHash,
+                    password_hash = CASE
+                        WHEN NULLIF(LTRIM(RTRIM(@PasswordHash)), '') IS NULL
+                             OR @PasswordHash IN ('HASH_UPDATED_2026', 'HASH_DEFAULT')
+                        THEN password_hash
+                        ELSE @PasswordHash
+                    END,
                     telefono = @Telefono
                 WHERE id_usuario = @IdUsuario;
             ";

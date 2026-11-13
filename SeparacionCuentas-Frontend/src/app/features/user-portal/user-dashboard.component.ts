@@ -83,11 +83,11 @@ import { Division, MetodoPago } from '../../core/models/api.models';
       </div>
     </div>
 
-    <!-- Selector rápido de cuenta activa -->
-    @if (api.cuentas().length > 0) {
+    <!-- Selector rápido de mis cuentas activas (Aislamiento estricto por usuario) -->
+    @if (misCuentasRelacionadas().length > 0) {
       <div style="display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 14px;">
-        <span style="font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap;">CUENTA ACTIVA:</span>
-        @for (c of api.cuentas(); track c.idCuenta) {
+        <span style="font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap;">MIS CUENTAS:</span>
+        @for (c of misCuentasRelacionadas(); track c.idCuenta) {
           <button
             type="button"
             class="btn-outline btn-sm"
@@ -99,6 +99,16 @@ import { Division, MetodoPago } from '../../core/models/api.models';
           </button>
         }
       </div>
+    } @else {
+      <section class="panel" style="padding: 28px; text-align: center; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 6px;">Aún no participas en ninguna cuenta compartida</h2>
+        <p class="sub" style="margin-bottom: 16px;">
+          Por privacidad, solo tienes acceso a las cuentas creadas por ti o en las que eres participante.
+        </p>
+        <a routerLink="/usuario/cuentas" class="btn-primary">
+          + Crear mi primera cuenta
+        </a>
+      </section>
     }
 
     <!-- Vista Principal de Cuenta Seleccionada -->
@@ -478,7 +488,7 @@ export class UserDashboardComponent {
   nuevoValorItem: number | null = null;
 
   readonly cuentaActiva = computed(() => {
-    const list = this.api.cuentas();
+    const list = this.misCuentasRelacionadas();
     return list.find(c => c.idCuenta === this.selectedCuentaId()) || list[0] || null;
   });
 
@@ -638,14 +648,14 @@ export class UserDashboardComponent {
       const nombre = this.nuevoNombrePart.trim();
       const correo =
         this.nuevoCorreoPart.trim() ||
-        `${nombre.toLowerCase().replace(/\s+/g, '.')}@spliy.ia`;
+        `${nombre.toLowerCase().replace(/\s+/g, '.')}@splitia.app`;
 
       this.api
         .createUsuario({
           nombre,
           correo,
           telefono: this.nuevoTelefonoPart.trim() || null,
-          passwordHash: 'HASH_NUEVO_2026'
+          passwordHash: '123456'
         })
         .subscribe(creado => {
           this.api

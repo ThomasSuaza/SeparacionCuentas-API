@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SeparacionCuentasService } from '../../core/services/separacion-cuentas.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 
 @Component({
@@ -21,9 +22,9 @@ import { ToastService } from '../../core/services/toast.service';
       </button>
     </div>
 
-    <!-- Selector de cuenta -->
+    <!-- Selector de mis cuentas (Aislamiento estricto por usuario) -->
     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
-      @for (c of api.cuentas(); track c.idCuenta) {
+      @for (c of auth.misCuentasUsuario(); track c.idCuenta) {
         <button
           type="button"
           class="btn-outline btn-sm"
@@ -36,7 +37,7 @@ import { ToastService } from '../../core/services/toast.service';
       }
     </div>
 
-    @if (resumen(); as res) {
+    @if (auth.misCuentasUsuario().length > 0 && resumen(); as res) {
       <div class="stat-grid">
         <div class="stat-card">
           <div class="tiny">Monto Total Cuenta</div>
@@ -138,15 +139,16 @@ import { ToastService } from '../../core/services/toast.service';
 })
 export class UserSaldosComponent {
   readonly api = inject(SeparacionCuentasService);
+  readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
   readonly cuentaId = signal<number>(0);
 
   readonly cuentaActivaId = computed(() => {
     const manual = this.cuentaId();
-    const list = this.api.cuentas();
+    const list = this.auth.misCuentasUsuario();
     if (manual && list.some(c => c.idCuenta === manual)) return manual;
-    return list[0]?.idCuenta || 1;
+    return list[0]?.idCuenta || 0;
   });
 
   readonly resumen = computed(() => this.api.calcularDevolucionesLocal(this.cuentaActivaId()));
@@ -158,7 +160,7 @@ export class UserSaldosComponent {
       s => `• ${s.nombre}: ${s.tipoMovimiento} $${s.saldo.toLocaleString('es-CO')} COP (Cuota: $${s.montoAsignado.toLocaleString('es-CO')})`
     );
     const msg =
-      `📊 *Resumen spliy.IA*\n` +
+      `📊 *Resumen SplitIA*\n` +
       `Cuenta: *${cuenta?.descripcion || '#' + res.idCuenta}*\n` +
       `Total: $${res.montoTotalCuenta.toLocaleString('es-CO')} COP (${res.estadoDistribucion})\n\n` +
       lineas.join('\n');

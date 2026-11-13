@@ -34,5 +34,20 @@ namespace ApiCQRS.Models
         /// Fecha de la cuenta.
         /// </summary>
         public DateTime Fecha { get; set; }
+
+        /// <summary>
+        /// Categoría del gasto compartido.
+        /// </summary>
+        public string Categoria { get; set; } = "General";
+
+        /// <summary>
+        /// Estado operativo de la cuenta (ACTIVA, CERRADA, ANULADA).
+        /// </summary>
+        public string Estado { get; set; } = "ACTIVA";
+
+        /// <summary>
+        /// Notas o detalle adicional de la cuenta.
+        /// </summary>
+        public string? Notas { get; set; }
     }
 }

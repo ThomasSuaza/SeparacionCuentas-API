@@ -24,7 +24,7 @@ import { ToastService } from './core/services/toast.service';
             <a routerLink="/bienvenida" style="display: flex; align-items: center; gap: 11px;" (click)="closeMobileMenu()">
               <div class="mark">S</div>
               <div class="brand-name">
-                spliy<span style="color: var(--accent)">.IA</span>
+                Split<span style="color: var(--accent)">IA</span>
                 <small>CUENTAS COMPARTIDAS</small>
               </div>
             </a>
@@ -170,7 +170,7 @@ import { ToastService } from './core/services/toast.service';
                     </svg>
                     Mis cuentas
                   </span>
-                  <span class="nav-badge">{{ api.cuentas().length }}</span>
+                  <span class="nav-badge">{{ auth.misCuentasUsuario().length }}</span>
                 </a>
 
                 <a
@@ -236,7 +236,7 @@ import { ToastService } from './core/services/toast.service';
               </button>
 
               <div class="crumb">
-                <span>spliy.IA</span>
+                <span>SplitIA</span>
                 <span style="opacity: 0.45">/</span>
                 <b>{{ auth.activeRole() === 'admin' ? 'Consola de Administrador' : 'Portal de Usuario' }}</b>
               </div>
@@ -319,7 +319,7 @@ import { ToastService } from './core/services/toast.service';
 
           <!-- PIE DE PÁGINA LIMPIO -->
           <footer class="app-footer">
-            <span>© 2026 spliy.IA</span>
+            <span>© 2026 SplitIA</span>
             <span>Gestión inteligente de cuentas compartidas</span>
           </footer>
         </main>
@@ -354,107 +354,73 @@ import { ToastService } from './core/services/toast.service';
             @if (mode !== 'register') {
               <div class="panel-head" style="margin-bottom: 12px;">
                 <div>
-                  <h2>{{ auth.isLoggedIn() ? 'Selecciona un perfil activo' : 'Iniciar sesión en spliy.IA' }}</h2>
+                  <h2>{{ auth.isLoggedIn() ? 'Autenticación para cambiar de cuenta' : 'Iniciar sesión en SplitIA' }}</h2>
                   <p class="sub">
-                    Elige el <b>Perfil Administrador</b>, un <b>Perfil de Usuario</b> o ingresa con tus credenciales.
+                    Por seguridad y privacidad, ingresa el <b>correo electrónico</b> y la <b>contraseña</b> de la cuenta a la que deseas acceder.
                   </p>
                 </div>
               </div>
 
-              <!-- Tarjeta destacada: PERFIL DE ADMINISTRADOR -->
-              <div style="margin-bottom: 14px;">
-                <div style="font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-bottom: 6px;">
-                  Perfil Administrativo:
+              <form (ngSubmit)="submitLogin()" style="display: grid; gap: 13px; margin-bottom: 18px;">
+                <div class="form-group">
+                  <label>Correo electrónico</label>
+                  <input
+                    class="form-control"
+                    type="email"
+                    [(ngModel)]="loginCorreo"
+                    name="loginCorreo"
+                    placeholder="Ej. thomas@correo.com o admin@splitia.app"
+                    required
+                  />
                 </div>
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                  [style.border-color]="auth.isLoggedIn() && auth.isAdminSession() ? 'var(--accent)' : 'var(--border)'"
-                  (click)="entrarComoAdmin()"
-                >
-                  <div style="display: flex; align-items: center; gap: 11px;">
-                    <div
-                      class="person-bubble"
-                      style="width: 36px; height: 36px; background: var(--accent-soft); color: var(--accent); font-weight: 900;"
-                    >
-                      🛡️
-                    </div>
-                    <div>
-                      <strong style="font-size: 13px; display: block;">Administrador spliy.IA</strong>
-                      <small style="font-size: 11px; color: var(--muted);">admin&#64;spliy.ia · Control total del sistema</small>
-                    </div>
-                  </div>
-                  @if (auth.isLoggedIn() && auth.isAdminSession()) {
-                    <span class="badge-status badge-success">Perfil activo</span>
-                  } @else {
-                    <span class="btn-primary btn-sm" style="padding: 5px 10px; font-size: 11px;">
-                      Usar Admin →
-                    </span>
-                  }
+                <div class="form-group">
+                  <label>Contraseña</label>
+                  <input
+                    class="form-control"
+                    type="password"
+                    [(ngModel)]="loginPassword"
+                    name="loginPassword"
+                    placeholder="Ingresa tu contraseña"
+                    required
+                  />
                 </div>
-              </div>
+                <button class="btn-primary" type="submit" style="width: 100%; margin-top: 4px;">
+                  Autenticar e iniciar sesión
+                </button>
+              </form>
 
-              <!-- Lista de Perfiles de Usuario Estándar -->
-              <div style="margin-bottom: 16px;">
-                <div style="font-size: 10.5px; font-weight: 800; color: var(--muted); margin-bottom: 6px; text-transform: uppercase;">
-                  Perfiles de Usuario ({{ api.usuarios().length }}):
-                </div>
-                <div style="display: grid; gap: 7px; max-height: 185px; overflow-y: auto;">
-                  @for (u of api.usuarios(); track u.idUsuario) {
-                    <div
-                      style="display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-alt); cursor: pointer;"
-                      [style.border-color]="auth.isLoggedIn() && !auth.isAdminSession() && auth.currentUser().idUsuario === u.idUsuario ? 'var(--accent)' : 'var(--border)'"
-                      (click)="seleccionarCuentaRapida(u.idUsuario)"
-                    >
-                      <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                        <div class="person-bubble" style="width: 32px; height: 32px;">{{ api.getIniciales(u.nombre) }}</div>
-                        <div style="min-width: 0;">
-                          <strong style="font-size: 12.5px; display: block;">{{ u.nombre }}</strong>
-                          <small style="font-size: 11px; color: var(--muted);">{{ u.correo }}</small>
-                        </div>
-                      </div>
-                      @if (auth.isLoggedIn() && !auth.isAdminSession() && auth.currentUser().idUsuario === u.idUsuario) {
-                        <span class="badge-status badge-success">Activo</span>
-                      } @else {
-                        <span style="font-size: 11.5px; font-weight: 700; color: var(--accent);">Cambiar →</span>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- Ingreso por correo / credenciales -->
+              <!-- Directorio de correos registrados (solo rellena el campo correo; exige contraseña) -->
               <div style="border-top: 1px solid var(--border); padding-top: 13px;">
                 <div style="font-size: 10.5px; font-weight: 800; color: var(--muted); margin-bottom: 8px; text-transform: uppercase;">
-                  O ingresa con correo / usuario (escribe "admin" para Administrador):
+                  Correos registrados (haz clic para autocompletar correo; clave demo usuarios: 123456):
                 </div>
-                <form (ngSubmit)="submitLogin()" style="display: grid; gap: 10px;">
-                  <div class="form-grid">
-                    <input
-                      class="form-control"
-                      type="text"
-                      [(ngModel)]="loginCorreo"
-                      name="loginCorreo"
-                      placeholder="Correo, nombre o 'admin'"
-                      required
-                    />
-                    <input
-                      class="form-control"
-                      type="password"
-                      [(ngModel)]="loginPassword"
-                      name="loginPassword"
-                      placeholder="Contraseña"
-                      required
-                    />
-                  </div>
-                  <button class="btn-primary" type="submit" style="width: 100%;">
-                    Entrar con estas credenciales
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 130px; overflow-y: auto;">
+                  <button
+                    type="button"
+                    class="btn-outline btn-sm"
+                    style="font-size: 11px; padding: 4px 10px;"
+                    [style.border-color]="loginCorreo === 'admin@splitia.app' ? 'var(--accent)' : 'var(--border)'"
+                    (click)="loginCorreo = 'admin@splitia.app'; loginPassword = 'admin123'"
+                  >
+                    🛡️ admin&#64;splitia.app (Clave: admin123)
                   </button>
-                </form>
+                  @for (u of api.usuarios(); track u.idUsuario) {
+                    <button
+                      type="button"
+                      class="btn-outline btn-sm"
+                      style="font-size: 11px; padding: 4px 10px;"
+                      [style.border-color]="loginCorreo === u.correo ? 'var(--accent)' : 'var(--border)'"
+                      (click)="rellenarCorreo(u.correo)"
+                    >
+                      👤 {{ u.correo }}
+                    </button>
+                  }
+                </div>
               </div>
             } @else {
               <div class="panel-head" style="margin-bottom: 12px;">
                 <div>
-                  <h2>Crear cuenta en spliy.IA</h2>
+                  <h2>Crear cuenta en SplitIA</h2>
                   <p class="sub">Registra un nuevo usuario para añadir cuentas y participar en divisiones.</p>
                 </div>
               </div>
@@ -581,10 +547,8 @@ export class AppComponent {
     this.auth.openAuthModal(mode);
   }
 
-  entrarComoAdmin(): void {
-    this.auth.loginAsAdmin();
-    this.auth.closeAuthModal();
-    this.router.navigate(['/admin/resumen']);
+  rellenarCorreo(correo: string): void {
+    this.loginCorreo = correo;
   }
 
   cerrarSesion(): void {
@@ -592,44 +556,63 @@ export class AppComponent {
     this.router.navigate(['/usuario/perfil']);
   }
 
-  seleccionarCuentaRapida(idUsuario: number): void {
-    this.auth.selectUser(idUsuario);
-    this.auth.closeAuthModal();
-    this.router.navigate(['/usuario/perfil']);
-  }
-
   submitLogin(): void {
-    if (!this.loginCorreo.trim()) return;
+    if (!this.loginCorreo.trim() || !this.loginPassword.trim()) return;
     this.auth.loginWithCredentials(this.loginCorreo, this.loginPassword).subscribe(user => {
+      if (!user) return;
       this.loginCorreo = '';
       this.loginPassword = '';
       this.auth.closeAuthModal();
-      if (this.auth.isAdminSession() || user.idUsuario === 999) {
+      if (this.auth.isAdminSession() || user.rol === 'ADMIN') {
         this.router.navigate(['/admin/resumen']);
       } else {
-        this.router.navigate(['/usuario/perfil']);
+        this.router.navigate(['/usuario/panel']);
       }
     });
   }
 
   submitRegister(): void {
-    if (!this.regNombre.trim() || !this.regCorreo.trim()) return;
+    if (!this.regNombre.trim() || !this.regCorreo.trim() || !this.regPassword.trim()) return;
+    const correoLimpio = this.regCorreo.trim();
+    const passLimpia = this.regPassword.trim();
     this.api
-      .createUsuario({
+      .registerBackend({
         nombre: this.regNombre.trim(),
-        correo: this.regCorreo.trim(),
+        correo: correoLimpio,
         telefono: this.regTelefono.trim() || null,
-        passwordHash: this.regPassword ? `HASH_${btoa(this.regPassword)}` : 'HASH_DEFAULT_2026'
+        passwordHash: passLimpia
       })
-      .subscribe(created => {
-        this.regNombre = '';
-        this.regCorreo = '';
-        this.regTelefono = '';
-        this.regPassword = '';
-        this.auth.selectUser(created.idUsuario);
-        this.auth.setRole('user', true);
-        this.auth.closeAuthModal();
-        this.router.navigate(['/usuario/perfil']);
+      .subscribe({
+        next: created => {
+          this.auth.saveUserPassword(correoLimpio, passLimpia);
+          this.regNombre = '';
+          this.regCorreo = '';
+          this.regTelefono = '';
+          this.regPassword = '';
+          this.auth.selectUser(created.idUsuario);
+          this.auth.closeAuthModal();
+          this.router.navigate(['/usuario/panel']);
+        },
+        error: () => {
+          // Si no hay conexión HTTP activa, crea con fallback local
+          this.api
+            .createUsuario({
+              nombre: this.regNombre.trim(),
+              correo: correoLimpio,
+              telefono: this.regTelefono.trim() || null,
+              passwordHash: `HASH_${btoa(passLimpia)}`
+            })
+            .subscribe(created => {
+              this.auth.saveUserPassword(correoLimpio, passLimpia);
+              this.regNombre = '';
+              this.regCorreo = '';
+              this.regTelefono = '';
+              this.regPassword = '';
+              this.auth.selectUser(created.idUsuario);
+              this.auth.closeAuthModal();
+              this.router.navigate(['/usuario/panel']);
+            });
+        }
       });
   }
 }
